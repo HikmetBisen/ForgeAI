@@ -1,0 +1,4 @@
+supabase
+voyageai
+pymupdf
+python-dotenv
