@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forge AI — Analysis Workspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --bg:       #FAFAF8;
+      --white:    #FFFFFF;
+      --surface:  #F3F2EF;
+      --border:   #E3E1DC;
+      --border-2: #C8C5BE;
+      --text:     #1A1814;
+      --text-2:   #66615A;
+      --text-3:   #A39E98;
+      --navy:     #1E3A5F;
+      --navy-lt:  #2D5BA3;
+      --navy-pale:#EDF2FA;
+      --success:  #166534;
+      --error:    #9B1C1C;
+      --error-bg: #FEF2F2;
+      --msg-user: #EDF2FA;
+      --msg-ai:   #FFFFFF;
+      --r: 3px; --t: 0.15s ease;
+    }
+    [data-theme="dark"] {
+      --bg:       #111110;
+      --white:    #1A1917;
+      --surface:  #222120;
+      --border:   #2E2C29;
+      --border-2: #48453F;
+      --text:     #ECEAE4;
+      --text-2:   #9B9690;
+      --text-3:   #5C5A55;
+      --navy:     #5B8FD6;
+      --navy-lt:  #6FA3E8;
+      --navy-pale:#101B2E;
+      --success:  #3FB950;
+      --error:    #F85149;
+      --error-bg: #1A0E0E;
+      --msg-user: #101B2E;
+      --msg-ai:   #1A1917;
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; overflow: hidden; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px; line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    #root { display: flex; flex-direction: column; }
+
+    /* ── Scrollbar ── */
+    .scr { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+    .scr::-webkit-scrollbar { width: 4px; }
+    .scr::-webkit-scrollbar-track { background: transparent; }
+    .scr::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+    @keyframes spin   { to { transform: rotate(360deg) } }
+    @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:.4} }
+    @keyframes dot    { 0%,80%,100%{opacity:.25;transform:scale(.7)} 40%{opacity:1;transform:scale(1)} }
+    .fade-up { animation: fadeUp .22s ease forwards; }
+    .spin    { animation: spin  1s linear infinite; }
+    .pulse   { animation: pulse 2s ease-in-out infinite; }
+    .dot { display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--text-3); animation: dot 1.3s ease-in-out infinite; }
+    .dot:nth-child(2) { animation-delay:.16s; }
+    .dot:nth-child(3) { animation-delay:.32s; }
+
+    /* ── Navbar ── */
+    .app-nav {
+      flex-shrink: 0; height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; background: var(--white); border-bottom: 1px solid var(--border);
+    }
+    .app-nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
+    .app-nav-mark { color: var(--navy); line-height: 0; }
+    .app-nav-name { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 600; }
+    .app-nav-name em { font-style: normal; color: var(--navy); }
+    .app-nav-sep { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
+    .app-nav-subtitle { font-size: 11px; color: var(--text-3); letter-spacing: 0.04em; }
+    .app-nav-right { display: flex; align-items: center; gap: 10px; }
+    .app-nav-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-3); }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+    .btn-icon { width:34px; height:34px; border:1px solid var(--border); background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-2); border-radius:var(--r); transition:all var(--t); }
+    .btn-icon:hover { border-color:var(--border-2); color:var(--text); background:var(--surface); }
+
+    /* ── Split layout ── */
+    .workspace { display: flex; flex: 1; overflow: hidden; }
+    .vdivider  { width: 1px; flex-shrink: 0; background: var(--border); }
+
+    /* ── Panel base ── */
+    .panel { display: flex; flex-direction: column; width: 50%; overflow: hidden; }
+    .panel-head {
+      flex-shrink: 0; height: 44px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; background: var(--white);
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-head-label { font-size: 11px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3); }
+    .panel-head-info  { font-size: 11px; color: var(--text-3); }
+    .panel-body { flex: 1; overflow: hidden; position: relative; background: var(--bg); }
+
+    /* ── Dropzone ── */
+    .dropzone {
+      position: absolute; inset: 16px;
+      border: 1.5px dashed var(--border-2);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: border-color var(--t), background var(--t);
+      border-radius: var(--r);
+    }
+    .dropzone:hover      { border-color: var(--navy); background: var(--navy-pale); }
+    .dropzone.over       { border-color: var(--navy); background: var(--navy-pale); }
+    .dropzone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+    .dz-icon { width:52px; height:52px; margin:0 auto 20px; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); border-radius:var(--r); color:var(--text-3); transition:border-color var(--t), color var(--t); }
+    .dropzone:hover .dz-icon, .dropzone.over .dz-icon { border-color: var(--navy); color: var(--navy); }
+    .dz-title { font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; text-align: center; }
+    .dz-sub   { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); text-align: center; }
+
+    /* ── File header badge ── */
+    .file-badge { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border: 1px solid var(--border); color: var(--text-3); border-radius: var(--r); }
+    .file-badge.pdf   { border-color: var(--navy); color: var(--navy); background: var(--navy-pale); }
+    .file-badge.image { border-color: var(--navy-lt); color: var(--navy-lt); background: var(--navy-pale); }
+    .btn-clear { display:flex; align-items:center; gap:4px; font-size:11px; color:var(--text-3); background:none; border:none; cursor:pointer; transition:color var(--t); padding:4px 0; }
+    .btn-clear:hover { color: var(--error); }
+
+    /* ── Processing/error states ── */
+    .state-center { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:24px; }
+
+    /* ── Chat messages ── */
+    .messages { flex:1; overflow-y:auto; padding:20px 16px; display:flex; flex-direction:column; gap:14px; }
+    .msg-group { display:flex; flex-direction:column; gap:4px; }
+    .msg-label { font-size: 10px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3); }
+    .msg-user .msg-label { text-align: right; }
+    .msg-bubble {
+      max-width: 88%; padding: 10px 14px; border-radius: var(--r);
+      font-size: 13px; line-height: 1.7; color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .msg-user  { align-items: flex-end; }
+    .msg-user  .msg-bubble { background: var(--msg-user); border-color: var(--navy-pale); margin-left: auto; }
+    .msg-ai    { align-items: flex-start; }
+    .msg-ai    .msg-bubble { background: var(--msg-ai); white-space: pre-wrap; }
+    .msg-error .msg-bubble { background: var(--error-bg); border-color: rgba(155,28,28,0.2); color: var(--error); font-size: 12px; }
+    .msg-loading .msg-bubble { background: var(--surface); display:inline-flex; align-items:center; gap:10px; }
+    .msg-loading-text { font-size: 12px; color: var(--text-3); }
+
+    /* ── Empty state ── */
+    .empty-state { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; user-select:none; }
+    .empty-icon { width:44px; height:44px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-3); margin-bottom:4px; }
+    .empty-title { font-size:12px; font-weight:500; color:var(--text-3); }
+    .empty-sub   { font-size:11px; color:var(--text-3); opacity:.7; }
+
+    /* ── Guided chips ── */
+    .chips-row { flex-shrink:0; padding:10px 16px 8px; border-top:1px solid var(--border); background:var(--white); display:flex; flex-wrap:wrap; gap:6px; }
+    .chip { font-size:11px; color:var(--text-2); border:1px solid var(--border); padding:5px 12px; background:transparent; cursor:pointer; border-radius:var(--r); transition:all var(--t); font-family:inherit; text-align:left; }
+    .chip:hover:not(:disabled) { border-color:var(--navy); color:var(--navy); background:var(--navy-pale); }
+    .chip:disabled { opacity:.4; cursor:not-allowed; }
+    .chip-num { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--navy); margin-right:4px; }
+
+    /* ── Input row ── */
+    .input-area { flex-shrink:0; padding:12px 16px; border-top:1px solid var(--border); background:var(--white); }
+    .input-row  { display:flex; gap:8px; align-items:flex-end; }
+    .input-wrap { flex:1; border:1px solid var(--border); background:var(--bg); border-radius:var(--r); transition:border-color var(--t); }
+    .input-wrap:focus-within { border-color: var(--navy); }
+    .input-wrap textarea {
+      width:100%; background:transparent; border:none; outline:none;
+      color:var(--text); font-size:13px; font-family:inherit;
+      padding:9px 12px; resize:none; line-height:1.6; max-height:100px;
+    }
+    .input-wrap textarea::placeholder { color:var(--text-3); }
+    .send-btn { width:36px; height:36px; background:var(--navy); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; border-radius:var(--r); transition:background var(--t); flex-shrink:0; }
+    .send-btn:hover:not(:disabled) { background: var(--navy-lt); }
+    .send-btn:disabled { opacity:.35; cursor:not-allowed; }
+    .input-hint { font-size:10px; color:var(--text-3); margin-top:6px; }
+  </style>
+</head>
+<body>
+  <script>(function(){ var t=localStorage.getItem('forge-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); document.documentElement.setAttribute('data-theme',t); })();</script>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect, useCallback } = React;
+
+    const API           = 'http://localhost:8000';
+    const ALLOWED_TYPES = ['application/pdf','image/png','image/jpeg'];
+    const MAX_BYTES     = 10 * 1024 * 1024;
+    const GUIDED        = [
+      'What is the primary load this structure handles?',
+      'What material is being used?',
+      'What is the required safety factor?',
+    ];
+
+    /* ── SVG icon helper ── */
+    const Ico = ({ d, size=16, cls='' }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+           className={cls} dangerouslySetInnerHTML={{ __html: d }} style={{ display:'block', flexShrink:0 }} />
+    );
+    const I = {
+      reticle: '<circle cx="8" cy="8" r="6"/><line x1="8" y1="2" x2="8" y2="4.5"/><line x1="8" y1="11.5" x2="8" y2="14"/><line x1="2" y1="8" x2="4.5" y2="8"/><line x1="11.5" y1="8" x2="14" y2="8"/>',
+      file:    '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+      upload:  '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+      x:       '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+      send:    '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+      alert:   '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+      loader:  '<line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>',
+      sun:     '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
+      moon:    '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+    };
+
+    /* ── Theme toggle ── */
+    function ThemeBtn() {
+      const [dark, setDark] = useState(document.documentElement.getAttribute('data-theme') === 'dark');
+      const toggle = () => {
+        const next = !dark;
+        document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+        localStorage.setItem('forge-theme', next ? 'dark' : 'light');
+        setDark(next);
+      };
+      return (
+        <button className="btn-icon" onClick={toggle} aria-label="Toggle theme">
+          <Ico d={dark ? I.moon : I.sun} size={15} />
+        </button>
+      );
+    }
+
+    /* ── Navbar ── */
+    function AppNav() {
+      return (
+        <nav className="app-nav">
+          <a href="index.html" className="app-nav-brand">
+            <span className="app-nav-mark" style={{ color:'var(--navy)' }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" style={{ display:'block' }}>
+                <circle cx="8" cy="8" r="6"/><line x1="8" y1="2" x2="8" y2="4.5"/><line x1="8" y1="11.5" x2="8" y2="14"/>
+                <line x1="2" y1="8" x2="4.5" y2="8"/><line x1="11.5" y1="8" x2="14" y2="8"/>
+              </svg>
+            </span>
+            <span className="app-nav-name">Forge <em>AI</em></span>
+            <span className="app-nav-sep" />
+            <span className="app-nav-subtitle">Analysis Workspace</span>
+          </a>
+          <div className="app-nav-right">
+            <div className="app-nav-status">
+              <span className="status-dot" style={{ animation:'pulse 2.5s ease-in-out infinite', display:'inline-block' }} />
+              System Online
+            </div>
+            <ThemeBtn />
+          </div>
+        </nav>
+      );
+    }
+
+    /* ── File Panel ── */
+    function FilePanel({ file, fileUrl, fileType, isUploading, uploadError, onFile, onClear }) {
+      const [over, setOver] = useState(false);
+
+      const validate = (f) => {
+        if (!f) return;
+        if (!ALLOWED_TYPES.includes(f.type)) return alert('Unsupported file type. Use PDF, PNG, JPG, or JPEG.');
+        if (f.size > MAX_BYTES) return alert('File exceeds 10 MB.');
+        onFile(f);
+      };
+
+      const onDragOver  = (e) => { e.preventDefault(); if (!file) setOver(true); };
+      const onDragLeave = () => setOver(false);
+      const onDrop      = (e) => { e.preventDefault(); setOver(false); if (!file) validate(e.dataTransfer.files[0]); };
+      const onInput     = (e) => { validate(e.target.files[0]); e.target.value = ''; };
+
+      const isPdf   = !isUploading && !uploadError && fileType === 'pdf'   && fileUrl;
+      const isImage = !isUploading && !uploadError && fileType === 'image' && fileUrl;
+
+      return (
+        <div className="panel">
+          <div className="panel-head">
+            <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
+              <Ico d={I.file} size={13} />
+              {file
+                ? <span style={{ fontSize:12, fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{file.name}</span>
+                : <span className="panel-head-label">File Viewer</span>
+              }
+            </div>
+            {file && !isUploading && (
+              <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0, marginLeft:8 }}>
+                {fileType && <span className={`file-badge ${fileType}`}>{fileType.toUpperCase()}</span>}
+                <button className="btn-clear" onClick={onClear}>
+                  <Ico d={I.x} size={11} /> Clear
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="panel-body">
+            {!file && (
+              <div className={`dropzone${over ? ' over' : ''}`}
+                   onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
+                <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={onInput} />
+                <div style={{ pointerEvents:'none', userSelect:'none' }}>
+                  <div className="dz-icon"><Ico d={I.upload} size={22} /></div>
+                  <p className="dz-title">{over ? 'Release to analyse' : 'Drop a file to analyse'}</p>
+                  <p className="dz-sub">PDF · PNG · JPG — max 10 MB</p>
+                </div>
+              </div>
+            )}
+
+            {isUploading && (
+              <div className="state-center fade-up">
+                <Ico d={I.loader} size={22} cls="spin" />
+                <span style={{ fontSize:12, color:'var(--text-3)' }}>Processing file…</span>
+                <div style={{ display:'flex', gap:4 }}><span className="dot"/><span className="dot"/><span className="dot"/></div>
+              </div>
+            )}
+
+            {!isUploading && uploadError && (
+              <div className="state-center fade-up">
+                <Ico d={I.alert} size={22} />
+                <p style={{ fontSize:12, color:'var(--error)', textAlign:'center', lineHeight:1.6, maxWidth:280 }}>{uploadError}</p>
+                <button onClick={onClear} style={{ fontSize:11, color:'var(--text-2)', background:'none', border:'1px solid var(--border)', padding:'6px 16px', cursor:'pointer', marginTop:4, borderRadius:'var(--r)', transition:'all var(--t)' }}>Try Again</button>
+              </div>
+            )}
+
+            {isPdf && (
+              <iframe src={fileUrl} title={file?.name}
+                style={{ width:'100%', height:'100%', border:'none', background:'var(--bg)' }} />
+            )}
+
+            {isImage && (
+              <div className="scr" style={{ height:'100%', overflow:'auto', display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
+                <img src={fileUrl} alt={file?.name} style={{ maxWidth:'100%', maxHeight:'100%', objectFit:'contain' }} />
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Message components ── */
+    function Msg({ role, content }) {
+      if (role === 'loading') return (
+        <div className="msg-group msg-ai fade-up">
+          <span className="msg-label">Forge AI</span>
+          <div className="msg-bubble msg-loading">
+            <span className="msg-loading-text">Analysing</span>
+            <div style={{ display:'flex', gap:4 }}><span className="dot"/><span className="dot"/><span className="dot"/></div>
+          </div>
+        </div>
+      );
+      const cls = role === 'user' ? 'msg-user' : role === 'error' ? 'msg-error' : 'msg-ai';
+      const label = role === 'user' ? 'You' : role === 'error' ? 'Error' : 'Forge AI';
+      return (
+        <div className={`msg-group ${cls} fade-up`}>
+          <span className="msg-label">{label}</span>
+          <div className="msg-bubble">{content}</div>
+        </div>
+      );
+    }
+
+    /* ── Chat Panel ── */
+    function ChatPanel({ messages, isQuerying, hasFile, onQuery }) {
+      const [input, setInput] = useState('');
+      const bottomRef   = useRef(null);
+      const textareaRef = useRef(null);
+      const userCount   = messages.filter(m => m.role === 'user').length;
+
+      useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:'smooth' }); }, [messages, isQuerying]);
+
+      const send = () => {
+        const q = input.trim();
+        if (!q || isQuerying) return;
+        onQuery(q); setInput('');
+      };
+      const handleKey = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
+      const handleChip = (q) => { setInput(q); textareaRef.current?.focus(); };
+
+      return (
+        <div className="panel">
+          <div className="panel-head">
+            <span className="panel-head-label">Analysis</span>
+            <span className="panel-head-info">{userCount > 0 ? `${userCount} ${userCount === 1 ? 'query' : 'queries'}` : 'Ready'}</span>
+          </div>
+
+          <div className="messages scr">
+            {messages.length === 0 && (
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" style={{ display:'block' }}>
+                    <circle cx="8" cy="8" r="6"/><line x1="8" y1="2" x2="8" y2="4.5"/><line x1="8" y1="11.5" x2="8" y2="14"/><line x1="2" y1="8" x2="4.5" y2="8"/><line x1="11.5" y1="8" x2="14" y2="8"/>
+                  </svg>
+                </div>
+                <p className="empty-title">Workspace ready</p>
+                <p className="empty-sub">Upload a file or ask a question to begin</p>
+              </div>
+            )}
+            {messages.map(m => <Msg key={m.id} role={m.role} content={m.content} />)}
+            {isQuerying && <Msg key="loading" role="loading" />}
+            <div ref={bottomRef} />
+          </div>
+
+          {hasFile && (
+            <div className="chips-row">
+              {GUIDED.map((q, i) => (
+                <button key={i} className="chip" onClick={() => handleChip(q)} disabled={isQuerying}>
+                  <span className="chip-num">{String(i+1).padStart(2,'0')}.</span>{q}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="input-area">
+            <div className="input-row">
+              <div className="input-wrap">
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={handleKey}
+                  placeholder="Ask an engineering question…"
+                  disabled={isQuerying}
+                  rows={2}
+                  className="scr"
+                />
+              </div>
+              <button className="send-btn" onClick={send} disabled={!input.trim() || isQuerying}>
+                <Ico d={I.send} size={13} />
+              </button>
+            </div>
+            <p className="input-hint">Enter to send · Shift + Enter for new line</p>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── App root ── */
+    function App() {
+      const [file,        setFile]        = useState(null);
+      const [fileUrl,     setFileUrl]     = useState(null);
+      const [fileType,    setFileType]    = useState(null);
+      const [fileContext, setFileContext] = useState('');
+      const [isUploading, setIsUploading] = useState(false);
+      const [uploadError, setUploadError] = useState(null);
+      const [messages,    setMessages]    = useState([]);
+      const [isQuerying,  setIsQuerying]  = useState(false);
+
+      const handleFile = useCallback(async (dropped) => {
+        if (fileUrl) URL.revokeObjectURL(fileUrl);
+        setFile(dropped); setFileUrl(URL.createObjectURL(dropped));
+        setFileType(null); setFileContext(''); setUploadError(null); setIsUploading(true);
+        const form = new FormData();
+        form.append('file', dropped);
+        try {
+          const { data } = await axios.post(`${API}/upload`, form);
+          setFileType(data.file_type); setFileContext(data.content);
+        } catch (err) {
+          setUploadError(err.response?.data?.detail ?? 'Upload failed — is the backend running on port 8000?');
+        } finally { setIsUploading(false); }
+      }, [fileUrl]);
+
+      const handleClear = useCallback(() => {
+        if (fileUrl) URL.revokeObjectURL(fileUrl);
+        setFile(null); setFileUrl(null); setFileType(null); setFileContext(''); setUploadError(null);
+      }, [fileUrl]);
+
+      const handleQuery = useCallback(async (query) => {
+        if (!query.trim() || isQuerying) return;
+        setMessages(prev => [...prev, { role:'user', content:query, id:Date.now() }]);
+        setIsQuerying(true);
+        try {
+          const { data } = await axios.post(`${API}/query`, { query, file_context:fileContext });
+          setMessages(prev => [...prev, { role:'ai', content:data.response, id:Date.now()+1 }]);
+        } catch (err) {
+          setMessages(prev => [...prev, { role:'error', content:err.response?.data?.detail ?? 'Query failed — is the backend running on port 8000?', id:Date.now()+1 }]);
+        } finally { setIsQuerying(false); }
+      }, [fileContext, isQuerying]);
+
+      return (
+        <>
+          <AppNav />
+          <div className="workspace">
+            <FilePanel
+              file={file} fileUrl={fileUrl} fileType={fileType}
+              isUploading={isUploading} uploadError={uploadError}
+              onFile={handleFile} onClear={handleClear}
+            />
+            <div className="vdivider" />
+            <ChatPanel
+              messages={messages} isQuerying={isQuerying}
+              hasFile={!!file && !isUploading && !uploadError}
+              onQuery={handleQuery}
+            />
+          </div>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

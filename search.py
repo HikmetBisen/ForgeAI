@@ -1,7 +1,7 @@
 import os
 import sys
+import httpx
 import voyageai
-from supabase import create_client
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,22 +10,30 @@ SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_ANON_KEY = os.environ["SUPABASE_ANON_KEY"]
 VOYAGE_API_KEY = os.environ["VOYAGE_API_KEY"]
 
+HEADERS = {
+    "apikey": SUPABASE_ANON_KEY,
+    "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+    "Content-Type": "application/json",
+}
+
 
 def search(query: str, match_count: int = 5) -> None:
     voyage = voyageai.Client(api_key=VOYAGE_API_KEY)
-    supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
     print(f'Query: "{query}"\n')
 
     result = voyage.embed([query], model="voyage-large-2", input_type="query")
     query_embedding = result.embeddings[0]
 
-    response = supabase.rpc(
-        "match_documents",
-        {"query_embedding": query_embedding, "match_count": match_count},
-    ).execute()
+    response = httpx.post(
+        f"{SUPABASE_URL}/rest/v1/rpc/match_documents",
+        headers=HEADERS,
+        json={"query_embedding": query_embedding, "match_count": match_count},
+        timeout=30,
+    )
+    response.raise_for_status()
 
-    rows = response.data
+    rows = response.json()
     if not rows:
         print("No results found.")
         return

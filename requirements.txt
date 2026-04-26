@@ -1,4 +1,9 @@
-supabase
+httpx
 voyageai
 pymupdf
 python-dotenv
+fastapi
+uvicorn
+anthropic
+pydantic
+slowapi

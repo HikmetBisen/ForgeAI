@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forge AI — Pricing</title>
+  <meta name="description" content="Simple, transparent pricing for engineers. Start free.">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* ── Hero ── */
+    .hero { padding: 160px 0 80px; border-bottom: 1px solid var(--border); text-align: center; }
+    .hero-h1 { font-size: clamp(2.4rem, 5vw, 3.8rem); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 20px; }
+    .hero-h1 em { color: var(--navy); }
+    .hero-sub { font-size: 17px; color: var(--text-2); line-height: 1.8; max-width: 480px; margin: 0 auto; }
+
+    /* ── Cards ── */
+    .cards-section { padding: 80px 0; }
+    .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+    .card { background: var(--bg); padding: 44px 36px; display: flex; flex-direction: column; position: relative; transition: background var(--t); }
+    .card:hover { background: var(--white); }
+    .card.featured { background: var(--white); border-top: 3px solid var(--navy); padding-top: 41px; }
+    .card.featured:hover { background: var(--white); }
+    .popular-tag { position: absolute; top: 20px; right: 24px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--navy); }
+    .card-tier { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 24px; }
+    .card-price { display: flex; align-items: baseline; gap: 4px; margin-bottom: 8px; }
+    .price-num { font-family: 'Playfair Display', serif; font-size: 3.2rem; font-weight: 700; color: var(--text); line-height: 1; letter-spacing: -0.02em; }
+    .price-period { font-size: 14px; color: var(--text-3); }
+    .card-sub { font-size: 13px; color: var(--text-2); line-height: 1.7; margin-bottom: 32px; min-height: 52px; }
+    .card-divider { height: 1px; background: var(--border); margin-bottom: 28px; }
+    .card-features { list-style: none; display: flex; flex-direction: column; gap: 12px; flex: 1; margin-bottom: 36px; }
+    .card-feature { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text); line-height: 1.5; }
+    .check { flex-shrink: 0; margin-top: 1px; }
+    .check.on { color: var(--navy); }
+    .check.off { color: var(--text-3); opacity: 0.5; }
+    .card-cta { display: block; text-align: center; padding: 11px 20px; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: var(--r); transition: all var(--t); cursor: pointer; }
+    .cta-outline { border: 1px solid var(--border); color: var(--text-2); }
+    .cta-outline:hover { border-color: var(--border-2); color: var(--text); background: var(--surface); }
+    .cta-fill { background: var(--navy); color: #fff; border: 1px solid var(--navy); }
+    .cta-fill:hover { background: var(--navy-hover); border-color: var(--navy-hover); }
+    .cta-ghost { border: 1px solid var(--border); color: var(--navy); }
+    .cta-ghost:hover { border-color: var(--navy); background: var(--navy-pale); }
+    .cards-note { text-align: center; margin-top: 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: var(--text-3); }
+
+    /* ── FAQ ── */
+    .faq-section { padding: 80px 0; border-top: 1px solid var(--border); }
+    .faq-inner { max-width: 700px; margin: 0 auto; padding: 0 2rem; }
+    .faq-list { margin-top: 48px; }
+    details { border-bottom: 1px solid var(--border); }
+    details:first-child { border-top: 1px solid var(--border); }
+    summary {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 0; cursor: pointer; list-style: none;
+      font-size: 15px; font-weight: 500; color: var(--text);
+      gap: 16px; transition: color var(--t);
+      -webkit-user-select: none; user-select: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary:hover { color: var(--navy); }
+    .faq-chevron { flex-shrink: 0; color: var(--text-3); transition: transform 0.2s ease, color 0.2s; }
+    details[open] summary .faq-chevron { transform: rotate(180deg); color: var(--navy); }
+    details[open] summary { color: var(--navy); }
+    .faq-body { padding: 0 0 24px; font-size: 14px; color: var(--text-2); line-height: 1.85; }
+    .faq-body code { font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: var(--surface); border: 1px solid var(--border); padding: 1px 6px; border-radius: 2px; color: var(--navy); }
+
+    /* ── CTA banner ── */
+    .cta-banner { padding: 80px 0; background: var(--surface); border-top: 1px solid var(--border); text-align: center; }
+    .cta-banner h2 { font-size: clamp(1.8rem,3vw,2.4rem); font-weight:600; margin-bottom:14px; }
+    .cta-banner p { color:var(--text-2); font-size:15px; margin-bottom:32px; }
+
+    @media (max-width: 860px) {
+      .cards-grid { grid-template-columns: 1fr; }
+      .card.featured { border-top-width: 3px; }
+    }
+  </style>
+</head>
+<body>
+<script>(function(){ var t=localStorage.getItem('forge-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); document.documentElement.setAttribute('data-theme',t); })();</script>
+
+<!-- ── NAVBAR ── -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      <span class="nav-logo-mark"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6"/><line x1="8" y1="2" x2="8" y2="4.5"/><line x1="8" y1="11.5" x2="8" y2="14"/><line x1="2" y1="8" x2="4.5" y2="8"/><line x1="11.5" y1="8" x2="14" y2="8"/></svg></span>
+      <span class="nav-logo-text">Forge <em>AI</em></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html#features">Features</a></li>
+      <li><a href="index.html#how">How It Works</a></li>
+      <li><a href="pricing.html" class="active">Pricing</a></li>
+      <li><a href="about.html">About</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn-icon" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme"></button>
+      <a href="app.html" class="btn-primary">Launch App</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="container">
+    <p class="label" style="margin-bottom:20px">Pricing</p>
+    <h1 class="hero-h1">Simple,<br><em>transparent</em> pricing.</h1>
+    <p class="hero-sub">Start free. Scale when you need to. No usage surprises, no hidden fees.</p>
+  </div>
+</section>
+
+<!-- ── PRICING CARDS ── -->
+<section class="cards-section">
+  <div class="container">
+    <div class="cards-grid">
+
+      <!-- FREE -->
+      <div class="card reveal">
+        <div class="card-tier">Free</div>
+        <div class="card-price"><span class="price-num">$0</span><span class="price-period">/ month</span></div>
+        <p class="card-sub">Everything you need to evaluate Forge AI on real engineering problems.</p>
+        <div class="card-divider"></div>
+        <ul class="card-features">
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>10 queries per day</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>3 file uploads per day</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>RAG semantic search</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Claude Sonnet analysis</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>PDF · PNG · JPG support</li>
+          <li class="card-feature"><svg class="check off" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span style="color:var(--text-3)">Report export</span></li>
+          <li class="card-feature"><svg class="check off" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span style="color:var(--text-3)">Priority retrieval</span></li>
+        </ul>
+        <a href="app.html" class="card-cta cta-outline">Start Free</a>
+      </div>
+
+      <!-- PRO -->
+      <div class="card featured reveal d1">
+        <span class="popular-tag">Most Popular</span>
+        <div class="card-tier">Pro</div>
+        <div class="card-price"><span class="price-num">$29</span><span class="price-period">/ month</span></div>
+        <p class="card-sub">For engineers who use Forge AI as part of their daily workflow.</p>
+        <div class="card-divider"></div>
+        <ul class="card-features">
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Unlimited queries</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Unlimited file uploads</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Priority RAG search</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>All Claude models</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Structured report export</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>PDF · PNG · JPG + CAD exports</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Email support</li>
+        </ul>
+        <a href="app.html" class="card-cta cta-fill">Start Pro Trial</a>
+      </div>
+
+      <!-- ENTERPRISE -->
+      <div class="card reveal d2">
+        <div class="card-tier">Enterprise</div>
+        <div class="card-price"><span class="price-num" style="font-size:2rem; padding-bottom:6px">Custom</span></div>
+        <p class="card-sub">For engineering teams and organisations with custom requirements.</p>
+        <div class="card-divider"></div>
+        <ul class="card-features">
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Everything in Pro</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Custom model routing (LiteLLM)</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>On-premise deployment</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Custom integrations</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Dedicated support channel</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>SLA guarantee</li>
+          <li class="card-feature"><svg class="check on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Team workspace management</li>
+        </ul>
+        <a href="mailto:hikmetbisen@gmail.com" class="card-cta cta-ghost">Contact Us</a>
+      </div>
+
+    </div>
+    <p class="cards-note reveal">All plans include Voyage AI embeddings · Supabase pgvector · Claude Sonnet analysis</p>
+  </div>
+</section>
+
+<!-- ── FAQ ── -->
+<section class="faq-section">
+  <div class="faq-inner">
+    <div class="reveal">
+      <p class="label" style="margin-bottom:14px">FAQ</p>
+      <h2 style="font-size:clamp(1.6rem,3vw,2.2rem); font-weight:600">Common questions.</h2>
+    </div>
+    <div class="faq-list reveal">
+
+      <details>
+        <summary>
+          What counts as a "query"?
+          <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <p class="faq-body">A query is any message sent to the Forge AI chat interface — whether freeform, a response to a guided prompt, or a follow-up. File uploads are counted separately. Free tier limits reset at midnight UTC.</p>
+      </details>
+
+      <details>
+        <summary>
+          Which file types are supported?
+          <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <p class="faq-body">All tiers support <code>PDF</code>, <code>PNG</code>, and <code>JPG/JPEG</code> up to 10 MB. Forge AI can read multi-page PDFs and paginate them in the viewer. Pro and Enterprise tiers will add <code>DXF</code> and <code>SVG</code> support in a future release.</p>
+      </details>
+
+      <details>
+        <summary>
+          How does the RAG knowledge base work?
+          <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <p class="faq-body">Your query is converted into a 1,536-dimensional vector using <code>voyage-large-2</code> embeddings, then a cosine similarity search is performed against your engineering knowledge base stored in Supabase pgvector. The top-5 most relevant document chunks are retrieved and passed to Claude alongside your question — grounding answers in actual engineering literature.</p>
+      </details>
+
+      <details>
+        <summary>
+          Can I cancel or change plans at any time?
+          <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <p class="faq-body">Yes. Upgrade, downgrade, or cancel from your account settings at any time. Cancellations take effect at the end of the current billing period. No long-term contracts, no lock-in.</p>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA BANNER ── -->
+<div class="cta-banner">
+  <div class="container">
+    <div class="reveal">
+      <p class="label" style="margin-bottom:18px">Get Started</p>
+      <h2>Ready to engineer faster?</h2>
+      <p>No credit card required. Free tier available immediately.</p>
+      <a href="app.html" class="btn-primary">Launch App →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer class="footer">
+  <div class="footer-inner">
+    <a href="index.html" class="footer-logo">
+      <span style="color:var(--navy); line-height:0"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6"/><line x1="8" y1="2" x2="8" y2="4.5"/><line x1="8" y1="11.5" x2="8" y2="14"/><line x1="2" y1="8" x2="4.5" y2="8"/><line x1="11.5" y1="8" x2="14" y2="8"/></svg></span>
+      <span class="footer-logo-text">Forge <em>AI</em></span>
+    </a>
+    <nav class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="app.html">Launch App</a>
+    </nav>
+    <p class="footer-copy">© 2025 Forge AI — Hikmet Bisen</p>
+  </div>
+</footer>
+
+<script>
+  const SUN = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+  const MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+  function updateThemeIcon() { const b = document.getElementById('themeBtn'); if (b) b.innerHTML = document.documentElement.getAttribute('data-theme') === 'dark' ? MOON : SUN; }
+  function toggleTheme() { const n = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('forge-theme', n); updateThemeIcon(); }
+  updateThemeIcon();
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 8));
+  const obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); } }), { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
