@@ -916,6 +916,88 @@
     .animations-ready .d3 { transition-delay: 0.3s; }
     .animations-ready .d4 { transition-delay: 0.4s; }
 
+    /* ── FAQ ───────────────────────────────────────────────── */
+    #faq { background: var(--surface); }
+
+    .faq-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 80px;
+      margin-top: 64px;
+      align-items: start;
+    }
+
+    .faq-sticky {
+      position: sticky;
+      top: 80px;
+    }
+
+    .faq-list { border-top: 1px solid var(--wire); }
+
+    .faq-item {
+      border-bottom: 1px solid var(--wire);
+    }
+
+    .faq-q {
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .faq-q-text {
+      font-family: var(--display);
+      font-size: 18px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: var(--text);
+      line-height: 1.1;
+      transition: color var(--t);
+    }
+    .faq-item.open .faq-q-text { color: var(--blue); }
+
+    .faq-icon {
+      width: 24px; height: 24px;
+      border: 1px solid var(--wire);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      color: var(--text-3);
+      transition: border-color var(--t), color var(--t), transform var(--t);
+    }
+    .faq-item.open .faq-icon {
+      border-color: var(--blue);
+      color: var(--blue);
+      transform: rotate(45deg);
+    }
+
+    .faq-a {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .faq-item.open .faq-a { max-height: 320px; }
+
+    .faq-a-inner {
+      padding: 0 0 28px;
+      font-size: 14px;
+      color: var(--text-2);
+      line-height: 1.9;
+      max-width: 560px;
+    }
+    .faq-a-inner strong { color: var(--text); font-weight: 600; }
+
+    @media (max-width: 900px) {
+      .faq-layout { grid-template-columns: 1fr; gap: 40px; }
+      .faq-sticky { position: static; }
+    }
+
     /* ── PAGE SWEEPER ──────────────────────────────────────── */
     #page-sweeper {
       position: fixed; top: 0; left: 0; right: 0; height: 2px;
@@ -1280,6 +1362,85 @@
   </div>
 </section>
 
+<!-- ── FAQ ── -->
+<div class="divider"></div>
+<section class="section" id="faq">
+  <div class="wrap">
+    <div class="faq-layout">
+      <div class="faq-sticky reveal">
+        <div class="section-rule"><span class="section-rule-text">FAQ</span></div>
+        <h2 class="section-h2">Common<br>questions.</h2>
+        <p class="section-sub" style="margin-top:16px">Anything else? Reach out directly.</p>
+        <a href="about.html" class="btn-ghost-hero" style="display:inline-flex; margin-top:28px;">Contact us →</a>
+      </div>
+
+      <div class="faq-list reveal d1">
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            <span class="faq-q-text">What file types can I upload?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="6" y1="0" x2="6" y2="12"/><line x1="0" y1="6" x2="12" y2="6"/></svg>
+            </span>
+          </button>
+          <div class="faq-a" role="region">
+            <p class="faq-a-inner">FORGE AI accepts <strong>PDF, PNG, and JPEG</strong> files. PDFs are ingested into the RAG knowledge base — chunks are embedded with Voyage AI and stored in Supabase pgvector. Images (sketches, photos of drawings, CAD screenshots) are passed directly to Claude for visual analysis. CAD formats like DXF or STEP are on the roadmap for Phase 5.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            <span class="faq-q-text">How does the RAG pipeline work?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="6" y1="0" x2="6" y2="12"/><line x1="0" y1="6" x2="12" y2="6"/></svg>
+            </span>
+          </button>
+          <div class="faq-a" role="region">
+            <p class="faq-a-inner">Your PDFs are chunked into 500-word segments with 50-word overlap, then embedded into <strong>1,536-dimensional vectors</strong> using Voyage AI's <code style="font-family:var(--mono); font-size:12px; color:var(--blue-lt)">voyage-large-2</code> model. At query time, your question is embedded the same way and a cosine similarity search returns the top-5 matching passages. Claude receives those passages as context alongside your question, so every answer is grounded in your documents — not general training data.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            <span class="faq-q-text">Is my data private?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="6" y1="0" x2="6" y2="12"/><line x1="0" y1="6" x2="12" y2="6"/></svg>
+            </span>
+          </button>
+          <div class="faq-a" role="region">
+            <p class="faq-a-inner">Documents you ingest are stored in <strong>your own Supabase instance</strong> — FORGE AI does not host a shared knowledge base. Your API keys (Anthropic, Voyage AI, Supabase) are stored locally in your <code style="font-family:var(--mono); font-size:12px; color:var(--blue-lt)">.env</code> file and never transmitted to us. The Enterprise plan includes an on-premise deployment option where nothing leaves your infrastructure.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            <span class="faq-q-text">Which AI models does FORGE AI use?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="6" y1="0" x2="6" y2="12"/><line x1="0" y1="6" x2="12" y2="6"/></svg>
+            </span>
+          </button>
+          <div class="faq-a" role="region">
+            <p class="faq-a-inner">Currently <strong>Claude Sonnet 4.5</strong> handles all analysis. Pro users will get access to the full Claude model family. Phase 6 introduces multi-model routing via LiteLLM — switch between Claude, GPT-4o, and Gemini mid-project without losing context. The interface is the constant; the engine is your choice.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            <span class="faq-q-text">Can I run it locally?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="6" y1="0" x2="6" y2="12"/><line x1="0" y1="6" x2="12" y2="6"/></svg>
+            </span>
+          </button>
+          <div class="faq-a" role="region">
+            <p class="faq-a-inner">Yes — the full stack runs locally right now. Clone the repo, add your API keys to <code style="font-family:var(--mono); font-size:12px; color:var(--blue-lt)">.env</code>, run <code style="font-family:var(--mono); font-size:12px; color:var(--blue-lt)">uvicorn main:app --reload</code>, and open <code style="font-family:var(--mono); font-size:12px; color:var(--blue-lt)">frontend/app.html</code>. You bring your own API keys for Anthropic, Voyage AI, and Supabase. The Free tier is essentially the self-hosted experience with a hosted backend option coming soon.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── FOOTER ── -->
 <footer class="footer">
   <div class="footer-inner">
@@ -1343,6 +1504,24 @@
     `;
     document.head.appendChild(style);
   }
+
+  // ── FAQ accordion ─────────────────────────────────────────
+  document.querySelectorAll('.faq-q').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.faq-item');
+      const isOpen = item.classList.contains('open');
+      // Close all
+      document.querySelectorAll('.faq-item.open').forEach(el => {
+        el.classList.remove('open');
+        el.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
+      });
+      // Open clicked if it was closed
+      if (!isOpen) {
+        item.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
 
   // ── Page transition sweeper ───────────────────────────────────
   (function() {
