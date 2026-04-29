@@ -71,10 +71,18 @@
       .cards-grid { grid-template-columns: 1fr; }
       .card.featured { border-top-width: 3px; }
     }
+
+    /* ── Reveal safety — visible by default, animate only when ready ── */
+    .reveal { opacity: 1 !important; transform: none !important; transition: clip-path 0.72s cubic-bezier(0.77, 0, 0.175, 1); }
+    .animations-ready .reveal            { clip-path: inset(0 100% 0 0); }
+    .animations-ready .reveal.in         { clip-path: inset(0 0% 0 0); }
+    .animations-ready .d1                { transition-delay: 0.12s; }
+    .animations-ready .d2                { transition-delay: 0.24s; }
+    .animations-ready .d3                { transition-delay: 0.36s; }
   </style>
 </head>
 <body>
-<script>(function(){ var t=localStorage.getItem('forge-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); document.documentElement.setAttribute('data-theme',t); })();</script>
+<script>(function(){ var t=localStorage.getItem('forge-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); document.documentElement.setAttribute('data-theme',t); document.documentElement.classList.add('animations-ready'); })();</script>
 
 <!-- ── NAVBAR ── -->
 <nav class="nav" id="nav">
@@ -253,6 +261,7 @@
   window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 8));
   const obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); } }), { threshold: 0.08 });
   document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  setTimeout(() => { document.querySelectorAll('.reveal:not(.in)').forEach(el => el.classList.add('in')); }, 600);
 </script>
 </body>
 </html>
