@@ -458,11 +458,6 @@
   const API           = 'http://localhost:8000';
   const ALLOWED_TYPES = ['application/pdf', 'image/png', 'image/jpeg'];
   const MAX_BYTES     = 10 * 1024 * 1024;
-  const GUIDED = [
-    'What is the primary load this structure handles?',
-    'What material or alloy is specified?',
-    'What safety factor is required for this application?',
-  ];
 
   /* ── SVG shorthand ── */
   const Ico = ({ d, size = 16, style }) => (
@@ -562,7 +557,7 @@
   /* ══════════════════════════════════════════
      SIDEBAR
   ══════════════════════════════════════════ */
-  function Sidebar({ open, file, fileType, isUploading, uploadError, onFile, onClear, onViewFile, isQuerying, onChipQuery }) {
+  function Sidebar({ open, file, fileType, isUploading, uploadError, onFile, onClear, onViewFile, isQuerying, onChipQuery, aiQuestions }) {
     const [over, setOver] = useState(false);
 
     const fileSize = file
@@ -599,12 +594,12 @@
             </div>
           )}
 
-          {/* Uploading */}
+          {/* Uploading / analyzing */}
           {file && isUploading && (
             <div className="sb-uploading">
               <Ico d={I.loader} size={18} style={{ animation: 'spin 1.1s linear infinite', color: 'var(--text-3)' }} />
               <div className="sb-upload-bar"><div className="sb-upload-fill" /></div>
-              <span className="sb-upload-label">Processing file…</span>
+              <span className="sb-upload-label">Analyzing file…</span>
             </div>
           )}
 
@@ -633,11 +628,11 @@
         </div>
 
         {/* ── Guided analysis section ── */}
-        {hasFile && (
+        {hasFile && aiQuestions.length > 0 && (
           <div className="sb-sec" style={{ flex: 1, overflowY: 'auto' }}>
             <div className="sb-label">Guided Analysis</div>
             <div className="guide-list">
-              {GUIDED.map((q, i) => (
+              {aiQuestions.map((q, i) => (
                 <button key={i} className="guide-chip" onClick={() => onChipQuery(q)} disabled={isQuerying}>
                   <span className="guide-num">{String(i + 1).padStart(2, '0')}.</span>
                   {q}
@@ -807,6 +802,7 @@
     const [fileUrl,     setFileUrl]     = useState(null);
     const [fileType,    setFileType]    = useState(null);
     const [fileContext, setFileContext] = useState('');
+    const [aiQuestions, setAiQuestions] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadError, setUploadError] = useState(null);
     const [messages,    setMessages]    = useState([]);
@@ -824,12 +820,14 @@
     const handleFile = useCallback(async (dropped) => {
       if (fileUrl) URL.revokeObjectURL(fileUrl);
       setFile(dropped); setFileUrl(URL.createObjectURL(dropped));
-      setFileType(null); setFileContext(''); setUploadError(null); setIsUploading(true);
+      setFileType(null); setFileContext(''); setAiQuestions([]); setUploadError(null); setIsUploading(true);
       const form = new FormData();
       form.append('file', dropped);
       try {
-        const { data } = await axios.post(`${API}/upload`, form);
-        setFileType(data.file_type); setFileContext(data.content);
+        const { data } = await axios.post(`${API}/analyze-file`, form);
+        setFileType(data.file_type);
+        setFileContext(data.content);
+        setAiQuestions(data.questions ?? []);
       } catch (err) {
         setUploadError(err.response?.data?.detail ?? 'Upload failed — is the backend running on port 8000?');
       } finally { setIsUploading(false); }
@@ -838,7 +836,7 @@
     const handleClear = useCallback(() => {
       if (fileUrl) URL.revokeObjectURL(fileUrl);
       setFile(null); setFileUrl(null); setFileType(null);
-      setFileContext(''); setUploadError(null);
+      setFileContext(''); setAiQuestions([]); setUploadError(null);
     }, [fileUrl]);
 
     const handleQuery = useCallback(async (query) => {
@@ -864,16 +862,15 @@
           <div className="empty-hex">
             <Ico d={I.file} size={20} />
           </div>
-          <p className="empty-title">File Ready</p>
+          <p className="empty-title">File Analyzed</p>
           <p className="empty-desc">
             <strong style={{ color: 'var(--text-2)', fontWeight: 500 }}>{file.name}</strong> has been
-            processed and is available as context.
-            <br />
-            Ask a question below or use a guided prompt in the sidebar.
+            processed. FORGE AI generated {aiQuestions.length} targeted questions
+            — click them in the sidebar to start, or type your own below.
           </p>
           <div className="empty-badge">
             <Ico d={I.check} size={10} />
-            Context active
+            {aiQuestions.length} guided questions ready
           </div>
         </div>
       );
@@ -906,6 +903,7 @@
             onViewFile={() => setModalOpen(true)}
             isQuerying={isQuerying}
             onChipQuery={handleQuery}
+            aiQuestions={aiQuestions}
           />
 
           <main className="main">

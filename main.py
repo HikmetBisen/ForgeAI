@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 import os
 
@@ -34,6 +35,18 @@ SYSTEM_PROMPT = (
     "Answer using the provided engineering knowledge context. "
     "Always show your reasoning and calculations."
 )
+
+ONBOARDING_PROMPT = (
+    "You are FORGE AI. Analyze this engineering file and generate exactly 3 smart, "
+    "specific questions an engineer should answer before analysis. "
+    "Return ONLY a JSON array of 3 question strings. No preamble, no explanation."
+)
+
+FALLBACK_QUESTIONS = [
+    "What is the primary load case for this component?",
+    "What material specification applies to this design?",
+    "What is the required safety factor for this application?",
+]
 
 MAX_FILE_BYTES = 10 * 1024 * 1024  # 10 MB
 ALLOWED_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
@@ -160,6 +173,86 @@ async def upload(request: Request, file: UploadFile):
     except Exception as e:
         logger.error("Upload error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Something went wrong.")
+
+
+@app.post("/analyze-file")
+@limiter.limit("5/minute")
+async def analyze_file(request: Request, file: UploadFile):
+    """Upload a file, extract its content, and return 3 AI-generated onboarding questions."""
+    filename = file.filename or ""
+    ext = os.path.splitext(filename.lower())[1]
+
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type '{ext}'. Allowed: PDF, PNG, JPG, JPEG.",
+        )
+
+    try:
+        data = await file.read()
+    except Exception as e:
+        logger.error("File read error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Could not read uploaded file.")
+
+    if len(data) > MAX_FILE_BYTES:
+        raise HTTPException(status_code=400, detail="File exceeds 10 MB limit.")
+
+    # ── Extract content from file ──
+    try:
+        if ext == ".pdf":
+            doc = fitz.open(stream=data, filetype="pdf")
+            text = "\n".join(page.get_text() for page in doc)
+            file_type = "pdf"
+            stored_content = text
+            # Truncate to 8 000 chars so the onboarding prompt stays cheap
+            claude_content = f"Engineering document text:\n\n{text[:8000]}"
+        else:
+            encoded = base64.b64encode(data).decode("utf-8")
+            mime = "image/png" if ext == ".png" else "image/jpeg"
+            file_type = "image"
+            stored_content = encoded
+            claude_content = [
+                {
+                    "type": "image",
+                    "source": {"type": "base64", "media_type": mime, "data": encoded},
+                },
+                {
+                    "type": "text",
+                    "text": "Analyze this engineering file and generate 3 specific questions.",
+                },
+            ]
+    except Exception as e:
+        logger.error("File extraction error: %s", e, exc_info=True)
+        raise HTTPException(status_code=400, detail="Could not parse the uploaded file.")
+
+    # ── Ask Claude for context-specific questions ──
+    questions = FALLBACK_QUESTIONS[:]
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        message = client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=512,
+            system=ONBOARDING_PROMPT,
+            messages=[{"role": "user", "content": claude_content}],
+        )
+        raw = message.content[0].text.strip()
+        parsed = json.loads(raw)
+        if isinstance(parsed, list) and parsed:
+            questions = [str(q) for q in parsed[:3]]
+            # Pad to 3 if Claude returned fewer
+            while len(questions) < 3:
+                questions.append("What additional context would help the analysis?")
+    except (json.JSONDecodeError, ValueError) as e:
+        logger.warning("Onboarding JSON parse failed (%s) — using fallback questions", e)
+    except Exception as e:
+        logger.error("Claude onboarding error: %s", e, exc_info=True)
+        # Non-fatal: return fallback questions so the user can still work
+
+    return {
+        "questions": questions,
+        "file_type": file_type,
+        "content": stored_content,
+    }
 
 
 @app.post("/query")
