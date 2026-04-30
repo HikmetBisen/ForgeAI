@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import os
+import re
 
 import anthropic
 import fitz
@@ -33,7 +34,14 @@ SUPABASE_HEADERS = {
 SYSTEM_PROMPT = (
     "You are FORGE AI, an expert mechanical engineering assistant. "
     "Answer using the provided engineering knowledge context. "
-    "Always show your reasoning and calculations."
+    "Always show your reasoning and calculations. "
+    "Always respond in valid JSON matching this exact structure: "
+    '{"summary": "one sentence answer", '
+    '"analysis": "detailed technical explanation", '
+    '"calculations": ["step 1", "step 2"], '
+    '"warnings": ["safety concerns or limitations"], '
+    '"recommendations": ["actionable next steps"]}. '
+    "If calculations are not applicable return an empty array. Never return plain text."
 )
 
 ONBOARDING_PROMPT = (
@@ -278,7 +286,28 @@ def query(request: Request, req: QueryRequest):
             messages=[{"role": "user", "content": prompt}],
         )
 
-        return {"response": message.content[0].text}
+        raw = message.content[0].text.strip()
+        # Strip markdown code fences (```json ... ```) Claude sometimes wraps output in
+        raw = re.sub(r'^```(?:json)?\s*', '', raw)
+        raw = re.sub(r'\s*```$', '', raw.strip())
+        try:
+            structured = json.loads(raw)
+            return {
+                "summary":         str(structured.get("summary", "")),
+                "analysis":        str(structured.get("analysis", "")),
+                "calculations":    [str(c) for c in structured.get("calculations", []) if c],
+                "warnings":        [str(w) for w in structured.get("warnings", []) if w],
+                "recommendations": [str(r) for r in structured.get("recommendations", []) if r],
+            }
+        except (json.JSONDecodeError, ValueError):
+            logger.warning("Structured JSON parse failed — wrapping raw response in fallback structure")
+            return {
+                "summary":         "Analysis complete.",
+                "analysis":        raw,
+                "calculations":    [],
+                "warnings":        [],
+                "recommendations": [],
+            }
 
     except Exception as e:
         logger.error("Claude API error: %s", e, exc_info=True)

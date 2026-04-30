@@ -339,6 +339,62 @@
     }
     .msg-body hr { border: none; border-top: 1px solid var(--wire); margin: 16px 0; }
 
+    /* ══════════════════════════════════════════
+       STRUCTURED RESPONSE SECTIONS
+    ══════════════════════════════════════════ */
+    .resp-summary {
+      padding: 20px 26px 18px;
+      font-family: var(--display); font-size: 21px; font-weight: 700;
+      letter-spacing: 0.03em; line-height: 1.3; color: var(--text);
+      border-bottom: 1px solid var(--wire);
+    }
+    .resp-section {
+      padding: 16px 26px;
+      border-bottom: 1px solid var(--wire);
+    }
+    .resp-section:last-child { border-bottom: none; }
+    .resp-sec-label {
+      font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--text-3);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    }
+    /* Analysis text */
+    .resp-analysis p { font-size: 14px; line-height: 1.9; color: var(--text); margin: 0 0 8px; }
+    .resp-analysis p:last-child { margin-bottom: 0; }
+    .resp-analysis h2 { font-family: var(--display); font-size: 18px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text); margin: 16px 0 6px; padding-bottom: 6px; border-bottom: 1px solid var(--wire); }
+    .resp-analysis h3 { font-family: var(--display); font-size: 14px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); margin: 12px 0 5px; }
+    .resp-analysis strong { font-weight: 600; color: var(--text); }
+    .resp-analysis code { font-family: var(--mono); font-size: 11px; background: var(--lift); border: 1px solid var(--wire); padding: 1px 5px; color: var(--blue-lt); }
+    .resp-analysis ul, .resp-analysis ol { padding-left: 20px; margin: 6px 0 10px; display: flex; flex-direction: column; gap: 5px; }
+    .resp-analysis li { font-size: 14px; line-height: 1.75; color: var(--text); }
+    /* Calculations */
+    .resp-calcs { background: rgba(10,12,16,0.35); }
+    .calc-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .calc-step {
+      display: flex; gap: 12px; padding: 10px 14px;
+      background: var(--ink); border: 1px solid var(--wire); border-left: 2px solid var(--wire-lt);
+    }
+    .calc-step-num { font-family: var(--mono); font-size: 9px; color: var(--blue); flex-shrink: 0; margin-top: 2px; letter-spacing: 0.04em; }
+    .calc-step-text { font-family: var(--mono); font-size: 12px; color: var(--text); line-height: 1.75; }
+    /* Warnings */
+    .resp-warn { background: rgba(217,119,6,0.04); }
+    .resp-warn .resp-sec-label { color: #d97706; }
+    .warn-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .warn-item {
+      display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
+      border: 1px solid rgba(217,119,6,0.25); border-left: 2px solid #d97706;
+      background: rgba(217,119,6,0.06); font-size: 13px; line-height: 1.75; color: #fbbf24;
+    }
+    /* Recommendations */
+    .resp-recs .resp-sec-label { color: var(--blue-lt); }
+    .rec-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .rec-item {
+      display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
+      border: 1px solid rgba(46,117,182,0.22); border-left: 2px solid var(--blue);
+      background: var(--blue-dim); font-size: 13px; line-height: 1.75; color: var(--text);
+    }
+    .rec-item svg { color: var(--blue); flex-shrink: 0; }
+
     /* ── Message: loading ── */
     .msg-loading-card {
       background: var(--panel); border: 1px solid var(--wire);
@@ -477,6 +533,7 @@
     loader: '<line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>',
     check:  '<polyline points="20 6 9 17 4 12"/>',
     layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+    warn:   '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
   };
 
   /* ── Markdown helpers ── */
@@ -652,6 +709,82 @@
   }
 
   /* ══════════════════════════════════════════
+     STRUCTURED RESPONSE RENDERER
+  ══════════════════════════════════════════ */
+  function StructuredResponse({ data }) {
+    const { summary, analysis, calculations, warnings, recommendations } = data;
+    return (
+      <div className="msg-ai-card">
+        {/* Summary — large, prominent headline */}
+        {summary && (
+          <div className="resp-summary">{summary}</div>
+        )}
+
+        {/* Analysis — readable technical paragraphs */}
+        {analysis && (
+          <div className="resp-section">
+            <div className="resp-sec-label">
+              <Ico d={I.layers} size={10} /> Analysis
+            </div>
+            <div className="resp-analysis">{renderMarkdown(analysis)}</div>
+          </div>
+        )}
+
+        {/* Calculations — monospace derivation steps */}
+        {calculations && calculations.length > 0 && (
+          <div className="resp-section resp-calcs">
+            <div className="resp-sec-label">
+              <Ico d={I.bolt} size={10} /> Calculations
+            </div>
+            <ol className="calc-list">
+              {calculations.map((step, i) => (
+                <li key={i} className="calc-step">
+                  <span className="calc-step-num">{String(i + 1).padStart(2, '0')}.</span>
+                  <span className="calc-step-text">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
+        {/* Warnings — amber accent */}
+        {warnings && warnings.length > 0 && (
+          <div className="resp-section resp-warn">
+            <div className="resp-sec-label">
+              <Ico d={I.warn} size={10} /> Warnings
+            </div>
+            <ul className="warn-list">
+              {warnings.map((w, i) => (
+                <li key={i} className="warn-item">
+                  <Ico d={I.warn} size={12} style={{ flexShrink: 0, marginTop: 2 }} />
+                  {w}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Recommendations — blue accent, checkmarks */}
+        {recommendations && recommendations.length > 0 && (
+          <div className="resp-section resp-recs">
+            <div className="resp-sec-label">
+              <Ico d={I.check} size={10} /> Recommendations
+            </div>
+            <ul className="rec-list">
+              {recommendations.map((r, i) => (
+                <li key={i} className="rec-item">
+                  <Ico d={I.check} size={12} style={{ flexShrink: 0, marginTop: 2 }} />
+                  {r}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ══════════════════════════════════════════
      MESSAGES
   ══════════════════════════════════════════ */
   function Msg({ role, content }) {
@@ -668,14 +801,11 @@
     );
 
     if (role === 'ai') {
-      const { thinking, response } = parseAIResponse(content);
+      // content is the structured object {summary, analysis, calculations, warnings, recommendations}
       return (
         <div className="msg-ai fade-up">
           <div className="msg-meta" style={{ marginBottom: 6 }}>Forge AI</div>
-          <div className="msg-ai-card">
-            {thinking && <div className="msg-thinking">↳ {thinking}</div>}
-            <div className="msg-body">{renderMarkdown(response)}</div>
-          </div>
+          <StructuredResponse data={content} />
         </div>
       );
     }
@@ -845,7 +975,7 @@
       setIsQuerying(true);
       try {
         const { data } = await axios.post(`${API}/query`, { query, file_context: fileContext });
-        setMessages(prev => [...prev, { role: 'ai', content: data.response, id: Date.now() + 1 }]);
+        setMessages(prev => [...prev, { role: 'ai', content: data, id: Date.now() + 1 }]);
       } catch (err) {
         setMessages(prev => [...prev, {
           role: 'error',
