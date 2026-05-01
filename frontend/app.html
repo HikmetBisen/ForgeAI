@@ -340,60 +340,59 @@
     .msg-body hr { border: none; border-top: 1px solid var(--wire); margin: 16px 0; }
 
     /* ══════════════════════════════════════════
-       STRUCTURED RESPONSE SECTIONS
+       REPORT SECTION HEADINGS (rendered via renderMarkdown)
+       These style the ## headings inside .msg-body
     ══════════════════════════════════════════ */
-    .resp-summary {
-      padding: 20px 26px 18px;
-      font-family: var(--display); font-size: 21px; font-weight: 700;
-      letter-spacing: 0.03em; line-height: 1.3; color: var(--text);
-      border-bottom: 1px solid var(--wire);
+    /* Section divider line between report sections */
+    .msg-body h2 + p, .msg-body h2 + ul, .msg-body h2 + ol { margin-top: 4px; }
+    /* Analysis & Calculations section — monospace code lines feel like derivations */
+    .msg-body code { font-family: var(--mono); font-size: 11.5px; background: var(--ink); border: 1px solid var(--wire); padding: 2px 6px; color: var(--blue-lt); }
+    /* Confidence Level: colour the High/Medium/Low token */
+    .msg-body p:has(strong) { }
+
+    /* ── Export button ── */
+    .msg-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .btn-export {
+      font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-3); background: none; border: 1px solid var(--wire);
+      padding: 5px 10px; cursor: pointer; transition: all var(--t);
     }
-    .resp-section {
-      padding: 16px 26px;
-      border-bottom: 1px solid var(--wire);
+    .btn-export:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+
+    /* ── History panel ── */
+    .history-list { display: flex; flex-direction: column; gap: 3px; }
+    .history-item {
+      width: 100%; text-align: left; padding: 7px 10px;
+      border: 1px solid var(--wire); background: transparent; cursor: pointer;
+      display: flex; flex-direction: column; gap: 3px; transition: all var(--t);
     }
-    .resp-section:last-child { border-bottom: none; }
-    .resp-sec-label {
-      font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
-      text-transform: uppercase; color: var(--text-3);
-      margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    .history-item:hover { border-color: var(--wire-lt); background: rgba(26,31,46,0.5); }
+    .history-q { font-family: var(--body); font-size: 11px; color: var(--text-2); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+    .history-ts { font-family: var(--mono); font-size: 9px; color: var(--text-3); }
+
+    /* ══════════════════════════════════════════
+       PRINT / PDF EXPORT
+    ══════════════════════════════════════════ */
+    #print-frame { display: none; }
+    @media print {
+      #root          { display: none !important; }
+      #print-frame   { display: block !important; padding: 48px 56px; color: #000; font-family: Georgia, 'Times New Roman', serif; font-size: 13px; line-height: 1.7; }
     }
-    /* Analysis text */
-    .resp-analysis p { font-size: 14px; line-height: 1.9; color: var(--text); margin: 0 0 8px; }
-    .resp-analysis p:last-child { margin-bottom: 0; }
-    .resp-analysis h2 { font-family: var(--display); font-size: 18px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text); margin: 16px 0 6px; padding-bottom: 6px; border-bottom: 1px solid var(--wire); }
-    .resp-analysis h3 { font-family: var(--display); font-size: 14px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); margin: 12px 0 5px; }
-    .resp-analysis strong { font-weight: 600; color: var(--text); }
-    .resp-analysis code { font-family: var(--mono); font-size: 11px; background: var(--lift); border: 1px solid var(--wire); padding: 1px 5px; color: var(--blue-lt); }
-    .resp-analysis ul, .resp-analysis ol { padding-left: 20px; margin: 6px 0 10px; display: flex; flex-direction: column; gap: 5px; }
-    .resp-analysis li { font-size: 14px; line-height: 1.75; color: var(--text); }
-    /* Calculations */
-    .resp-calcs { background: rgba(10,12,16,0.35); }
-    .calc-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-    .calc-step {
-      display: flex; gap: 12px; padding: 10px 14px;
-      background: var(--ink); border: 1px solid var(--wire); border-left: 2px solid var(--wire-lt);
-    }
-    .calc-step-num { font-family: var(--mono); font-size: 9px; color: var(--blue); flex-shrink: 0; margin-top: 2px; letter-spacing: 0.04em; }
-    .calc-step-text { font-family: var(--mono); font-size: 12px; color: var(--text); line-height: 1.75; }
-    /* Warnings */
-    .resp-warn { background: rgba(217,119,6,0.04); }
-    .resp-warn .resp-sec-label { color: #d97706; }
-    .warn-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-    .warn-item {
-      display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
-      border: 1px solid rgba(217,119,6,0.25); border-left: 2px solid #d97706;
-      background: rgba(217,119,6,0.06); font-size: 13px; line-height: 1.75; color: #fbbf24;
-    }
-    /* Recommendations */
-    .resp-recs .resp-sec-label { color: var(--blue-lt); }
-    .rec-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-    .rec-item {
-      display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
-      border: 1px solid rgba(46,117,182,0.22); border-left: 2px solid var(--blue);
-      background: var(--blue-dim); font-size: 13px; line-height: 1.75; color: var(--text);
-    }
-    .rec-item svg { color: var(--blue); flex-shrink: 0; }
+    /* Print frame content styles (only rendered during print) */
+    .pf-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 16px; border-bottom: 2px solid #000; margin-bottom: 24px; }
+    .pf-brand  { font-family: Arial, sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+    .pf-date   { font-family: Arial, sans-serif; font-size: 11px; color: #555; text-align: right; }
+    .pf-question { padding: 12px 16px; background: #f4f4f4; border-left: 3px solid #000; margin-bottom: 28px; }
+    .pf-q-label { font-family: Arial, sans-serif; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #666; margin-bottom: 4px; }
+    .pf-q-text  { font-size: 14px; font-weight: 600; font-family: Arial, sans-serif; }
+    .pf-body h2 { font-family: Arial, sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin: 28px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #bbb; }
+    .pf-body h3 { font-family: Arial, sans-serif; font-size: 12px; font-weight: 600; margin: 16px 0 6px; }
+    .pf-body p  { margin: 0 0 8px; }
+    .pf-body ul, .pf-body ol { padding-left: 22px; margin: 6px 0 12px; }
+    .pf-body li { margin: 3px 0; }
+    .pf-body strong { font-weight: 700; }
+    .pf-body code   { font-family: 'Courier New', monospace; font-size: 11px; background: #f0f0f0; padding: 1px 4px; }
+    .pf-footer { margin-top: 48px; padding-top: 14px; border-top: 1px solid #ccc; font-family: Arial, sans-serif; font-size: 10px; color: #999; text-align: center; }
 
     /* ── Message: loading ── */
     .msg-loading-card {
@@ -503,6 +502,8 @@
 <body>
 <div id="root"></div>
 
+<div id="print-frame"></div>
+
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -535,6 +536,43 @@
     layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
     warn:   '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
   };
+
+  /* ── Timestamp formatter ── */
+  function formatTs(iso) {
+    const diff = Date.now() - new Date(iso);
+    if (diff < 60000)    return 'just now';
+    if (diff < 3600000)  return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  /* ── Print frame HTML builder ── */
+  function buildPrintHTML(question, response, date) {
+    const safe = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const bodyHtml = response
+      .replace(/^## (.+)$/gm, (_, t) => `<h2>${t}</h2>`)
+      .replace(/^### (.+)$/gm, (_, t) => `<h3>${t}</h3>`)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/^[-*] (.+)$/gm, (_, t) => `<li>${t}</li>`)
+      .replace(/^\d+\. (.+)$/gm, (_, t) => `<li>${t}</li>`)
+      .replace(/^---+$/gm, '<hr>')
+      .split('\n')
+      .map(line => (line.trim() && !line.trim().startsWith('<')) ? `<p>${line}</p>` : line)
+      .join('\n');
+    return `
+      <div class="pf-header">
+        <span class="pf-brand">&#9670; FORGE AI</span>
+        <span class="pf-date">Analysis Report &middot; ${date}</span>
+      </div>
+      <div class="pf-question">
+        <div class="pf-q-label">Engineering Query</div>
+        <div class="pf-q-text">${safe(question)}</div>
+      </div>
+      <div class="pf-body">${bodyHtml}</div>
+      <div class="pf-footer">Generated by FORGE AI &middot; forge-ai.engineering</div>
+    `;
+  }
 
   /* ── Markdown helpers ── */
   function parseInline(text) {
@@ -614,7 +652,7 @@
   /* ══════════════════════════════════════════
      SIDEBAR
   ══════════════════════════════════════════ */
-  function Sidebar({ open, file, fileType, isUploading, uploadError, onFile, onClear, onViewFile, isQuerying, onChipQuery, aiQuestions }) {
+  function Sidebar({ open, file, fileType, isUploading, uploadError, onFile, onClear, onViewFile, isQuerying, onChipQuery, aiQuestions, history, onLoadHistory }) {
     const [over, setOver] = useState(false);
 
     const fileSize = file
@@ -699,6 +737,21 @@
           </div>
         )}
 
+        {/* ── Session history ── */}
+        {history && history.length > 0 && (
+          <div className="sb-sec scr" style={{ flex: '0 0 auto', overflowY: 'auto', maxHeight: 220 }}>
+            <div className="sb-label">Session History</div>
+            <div className="history-list">
+              {history.slice(0, 8).map(item => (
+                <button key={item.id} className="history-item" onClick={() => onLoadHistory(item)}>
+                  <span className="history-q">{item.question.length > 55 ? item.question.slice(0, 55) + '…' : item.question}</span>
+                  <span className="history-ts">{formatTs(item.ts)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Sidebar footer ── */}
         <div className="sb-footer">
           <span className="status-dot" style={{ animation: 'pulse 2.5s ease-in-out infinite' }} />
@@ -709,85 +762,9 @@
   }
 
   /* ══════════════════════════════════════════
-     STRUCTURED RESPONSE RENDERER
-  ══════════════════════════════════════════ */
-  function StructuredResponse({ data }) {
-    const { summary, analysis, calculations, warnings, recommendations } = data;
-    return (
-      <div className="msg-ai-card">
-        {/* Summary — large, prominent headline */}
-        {summary && (
-          <div className="resp-summary">{summary}</div>
-        )}
-
-        {/* Analysis — readable technical paragraphs */}
-        {analysis && (
-          <div className="resp-section">
-            <div className="resp-sec-label">
-              <Ico d={I.layers} size={10} /> Analysis
-            </div>
-            <div className="resp-analysis">{renderMarkdown(analysis)}</div>
-          </div>
-        )}
-
-        {/* Calculations — monospace derivation steps */}
-        {calculations && calculations.length > 0 && (
-          <div className="resp-section resp-calcs">
-            <div className="resp-sec-label">
-              <Ico d={I.bolt} size={10} /> Calculations
-            </div>
-            <ol className="calc-list">
-              {calculations.map((step, i) => (
-                <li key={i} className="calc-step">
-                  <span className="calc-step-num">{String(i + 1).padStart(2, '0')}.</span>
-                  <span className="calc-step-text">{step}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
-
-        {/* Warnings — amber accent */}
-        {warnings && warnings.length > 0 && (
-          <div className="resp-section resp-warn">
-            <div className="resp-sec-label">
-              <Ico d={I.warn} size={10} /> Warnings
-            </div>
-            <ul className="warn-list">
-              {warnings.map((w, i) => (
-                <li key={i} className="warn-item">
-                  <Ico d={I.warn} size={12} style={{ flexShrink: 0, marginTop: 2 }} />
-                  {w}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Recommendations — blue accent, checkmarks */}
-        {recommendations && recommendations.length > 0 && (
-          <div className="resp-section resp-recs">
-            <div className="resp-sec-label">
-              <Ico d={I.check} size={10} /> Recommendations
-            </div>
-            <ul className="rec-list">
-              {recommendations.map((r, i) => (
-                <li key={i} className="rec-item">
-                  <Ico d={I.check} size={12} style={{ flexShrink: 0, marginTop: 2 }} />
-                  {r}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  /* ══════════════════════════════════════════
      MESSAGES
   ══════════════════════════════════════════ */
-  function Msg({ role, content }) {
+  function Msg({ role, content, question, onExport }) {
     if (role === 'loading') return (
       <div className="fade-up">
         <div className="msg-meta">Forge AI · Analysing</div>
@@ -801,11 +778,19 @@
     );
 
     if (role === 'ai') {
-      // content is the structured object {summary, analysis, calculations, warnings, recommendations}
       return (
         <div className="msg-ai fade-up">
           <div className="msg-meta" style={{ marginBottom: 6 }}>Forge AI</div>
-          <StructuredResponse data={content} />
+          <div className="msg-ai-card">
+            <div className="msg-body">{renderMarkdown(content)}</div>
+          </div>
+          {question && onExport && (
+            <div className="msg-actions">
+              <button className="btn-export" onClick={() => onExport(question, content)}>
+                Export Report ↗
+              </button>
+            </div>
+          )}
         </div>
       );
     }
@@ -938,6 +923,9 @@
     const [messages,    setMessages]    = useState([]);
     const [isQuerying,  setIsQuerying]  = useState(false);
     const [modalOpen,   setModalOpen]   = useState(false);
+    const [history,     setHistory]     = useState(() => {
+      try { return JSON.parse(localStorage.getItem('forge-history') || '[]'); } catch { return []; }
+    });
     const bottomRef = useRef(null);
 
     const hasFile    = !!file && !isUploading && !uploadError;
@@ -969,13 +957,38 @@
       setFileContext(''); setAiQuestions([]); setUploadError(null);
     }, [fileUrl]);
 
+    const saveToHistory = useCallback((question, response) => {
+      const item = { id: Date.now(), question, response, ts: new Date().toISOString() };
+      setHistory(prev => {
+        const updated = [item, ...prev].slice(0, 20);
+        try { localStorage.setItem('forge-history', JSON.stringify(updated)); } catch {}
+        return updated;
+      });
+    }, []);
+
+    const handleExport = useCallback((question, response) => {
+      const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      document.getElementById('print-frame').innerHTML = buildPrintHTML(question, response, date);
+      window.print();
+    }, []);
+
+    const handleLoadHistory = useCallback((item) => {
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', content: item.question, id: Date.now()     },
+        { role: 'ai',   content: item.response,  question: item.question, id: Date.now() + 1 },
+      ]);
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    }, []);
+
     const handleQuery = useCallback(async (query) => {
       if (!query.trim() || isQuerying) return;
       setMessages(prev => [...prev, { role: 'user', content: query, id: Date.now() }]);
       setIsQuerying(true);
       try {
         const { data } = await axios.post(`${API}/query`, { query, file_context: fileContext });
-        setMessages(prev => [...prev, { role: 'ai', content: data, id: Date.now() + 1 }]);
+        setMessages(prev => [...prev, { role: 'ai', content: data.response, question: query, id: Date.now() + 1 }]);
+        saveToHistory(query, data.response);
       } catch (err) {
         setMessages(prev => [...prev, {
           role: 'error',
@@ -983,7 +996,7 @@
           id: Date.now() + 1,
         }]);
       } finally { setIsQuerying(false); }
-    }, [fileContext, isQuerying]);
+    }, [fileContext, isQuerying, saveToHistory]);
 
     /* ── Empty state content ── */
     const renderEmpty = () => {
@@ -1034,6 +1047,8 @@
             isQuerying={isQuerying}
             onChipQuery={handleQuery}
             aiQuestions={aiQuestions}
+            history={history}
+            onLoadHistory={handleLoadHistory}
           />
 
           <main className="main">
@@ -1042,7 +1057,7 @@
                 ? renderEmpty()
                 : (
                   <div className="messages-inner">
-                    {messages.map(m => <Msg key={m.id} role={m.role} content={m.content} />)}
+                    {messages.map(m => <Msg key={m.id} role={m.role} content={m.content} question={m.question} onExport={handleExport} />)}
                     {isQuerying && <Msg key="loading" role="loading" />}
                     <div ref={bottomRef} style={{ height: 1 }} />
                   </div>

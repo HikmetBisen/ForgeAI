@@ -34,14 +34,20 @@ SUPABASE_HEADERS = {
 SYSTEM_PROMPT = (
     "You are FORGE AI, an expert mechanical engineering assistant. "
     "Answer using the provided engineering knowledge context. "
-    "Always show your reasoning and calculations. "
-    "Always respond in valid JSON matching this exact structure: "
-    '{"summary": "one sentence answer", '
-    '"analysis": "detailed technical explanation", '
-    '"calculations": ["step 1", "step 2"], '
-    '"warnings": ["safety concerns or limitations"], '
-    '"recommendations": ["actionable next steps"]}. '
-    "If calculations are not applicable return an empty array. Never return plain text."
+    "Structure every response using these exact sections in order:\n\n"
+    "## Problem Statement\n"
+    "[Restate what was asked in one or two sentences]\n\n"
+    "## Approach\n"
+    "[Methodology, standards, or frameworks used — e.g. ASME, Euler-Bernoulli, FEA approach]\n\n"
+    "## Analysis & Calculations\n"
+    "[Show all calculation steps explicitly. Use variables, units, and intermediate results.]\n\n"
+    "## Findings\n"
+    "[Key numerical results and what they mean for the design]\n\n"
+    "## Recommendations\n"
+    "[Specific, actionable next steps the engineer should take]\n\n"
+    "## Confidence Level\n"
+    "[High / Medium / Low — and one sentence explaining why]\n\n"
+    "Use markdown. Show all working. Never skip sections."
 )
 
 ONBOARDING_PROMPT = (
@@ -286,28 +292,7 @@ def query(request: Request, req: QueryRequest):
             messages=[{"role": "user", "content": prompt}],
         )
 
-        raw = message.content[0].text.strip()
-        # Strip markdown code fences (```json ... ```) Claude sometimes wraps output in
-        raw = re.sub(r'^```(?:json)?\s*', '', raw)
-        raw = re.sub(r'\s*```$', '', raw.strip())
-        try:
-            structured = json.loads(raw)
-            return {
-                "summary":         str(structured.get("summary", "")),
-                "analysis":        str(structured.get("analysis", "")),
-                "calculations":    [str(c) for c in structured.get("calculations", []) if c],
-                "warnings":        [str(w) for w in structured.get("warnings", []) if w],
-                "recommendations": [str(r) for r in structured.get("recommendations", []) if r],
-            }
-        except (json.JSONDecodeError, ValueError):
-            logger.warning("Structured JSON parse failed — wrapping raw response in fallback structure")
-            return {
-                "summary":         "Analysis complete.",
-                "analysis":        raw,
-                "calculations":    [],
-                "warnings":        [],
-                "recommendations": [],
-            }
+        return {"response": message.content[0].text}
 
     except Exception as e:
         logger.error("Claude API error: %s", e, exc_info=True)
