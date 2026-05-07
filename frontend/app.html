@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script>if(localStorage.getItem('forge-theme')==='light')document.documentElement.classList.add('light');</script>
 
   <style>
     /* ══════════════════════════════════════════
@@ -32,6 +33,31 @@
       --body:     'Barlow', sans-serif;
       --t:        0.18s ease;
     }
+
+    /* ══════════════════════════════════════════
+       LIGHT MODE TOKENS
+    ══════════════════════════════════════════ */
+    html.light {
+      --ink:      #e8edf5;
+      --surface:  #f4f6fa;
+      --panel:    #ffffff;
+      --lift:     #eef1f6;
+      --wire:     #cdd5e3;
+      --wire-lt:  #b5c1d5;
+      --blue:     #2E75B6;
+      --blue-lt:  #1a5fa0;
+      --blue-dim: rgba(46,117,182,0.09);
+      --text:     #0d1117;
+      --text-2:   #3d4f63;
+      --text-3:   #7a8ea6;
+      --green:    #15803d;
+      --red:      #dc2626;
+    }
+    /* Explicit overrides for hardcoded rgba values that don't use tokens */
+    html.light .sb-dz          { background: rgba(210,220,235,0.45); }
+    html.light .modal-bg       { background: rgba(60,80,110,0.50); }
+    html.light .history-item:hover { background: rgba(205,215,230,0.65); }
+    html.light .guide-chip:hover:not(:disabled) { background: rgba(205,215,230,0.65); }
 
     /* ══════════════════════════════════════════
        RESET
@@ -359,6 +385,34 @@
     }
     .btn-export:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
 
+    /* ── Theme toggle ── */
+    .theme-btn {
+      width: 30px; height: 30px;
+      border: 1px solid var(--wire); background: transparent; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-3); transition: all var(--t); flex-shrink: 0;
+    }
+    .theme-btn:hover { border-color: var(--wire-lt); color: var(--text); background: var(--lift); }
+
+    /* ── Model selector ── */
+    .model-sel {
+      font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-2);
+      background: var(--panel); border: 1px solid var(--wire);
+      padding: 5px 10px; cursor: pointer;
+      appearance: none; -webkit-appearance: none;
+      transition: border-color var(--t), color var(--t);
+    }
+    .model-sel:hover { border-color: var(--wire-lt); color: var(--text); }
+    .model-sel:focus { outline: none; border-color: var(--blue); }
+    .model-sel option { background: var(--panel); }
+
+    /* ── Model tag under AI response ── */
+    .msg-model-tag {
+      font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text-3); margin-top: 5px;
+    }
+
     /* ── History panel ── */
     .history-list { display: flex; flex-direction: column; gap: 3px; }
     .history-item {
@@ -535,6 +589,8 @@
     check:  '<polyline points="20 6 9 17 4 12"/>',
     layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
     warn:   '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+    moon:   '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+    sun:    '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
   };
 
   /* ── Timestamp formatter ── */
@@ -605,19 +661,10 @@
     flush();
     return out;
   }
-  function parseAIResponse(text) {
-    const pre = /^(I need to|Let me|I should|I'll |I will |I'm going to|I can |Based on|Looking at|To answer|To provide|Given the|First,|My response|Here I)/i;
-    const paras = text.split(/\n\n+/);
-    if (paras.length > 1 && pre.test(paras[0].trim())) {
-      return { thinking: paras[0].trim(), response: paras.slice(1).join('\n\n').trim() };
-    }
-    return { thinking: null, response: text };
-  }
-
   /* ══════════════════════════════════════════
      NAV
   ══════════════════════════════════════════ */
-  function Nav({ sidebarOpen, onToggle, queryCount }) {
+  function Nav({ sidebarOpen, onToggle, queryCount, selectedModel, onModelChange, isDark, onThemeToggle, backendOnline }) {
     return (
       <nav className="nav">
         <button className="nav-toggle" onClick={onToggle} aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}>
@@ -639,9 +686,25 @@
           {queryCount > 0 && (
             <span className="nav-qcount">{queryCount} {queryCount === 1 ? 'query' : 'queries'}</span>
           )}
+          <select
+            className="model-sel"
+            value={selectedModel}
+            onChange={e => onModelChange(e.target.value)}
+            aria-label="Select model"
+          >
+            <option value="auto">Auto (Recommended)</option>
+            <option value="claude-sonnet-4-5">Claude Sonnet</option>
+            <option value="gpt-4o">GPT-4o</option>
+          </select>
+          <button className="theme-btn" onClick={onThemeToggle} aria-label="Toggle theme">
+            <Ico d={isDark ? I.sun : I.moon} size={13} />
+          </button>
           <div className="nav-status">
-            <span className="status-dot" style={{ animation: 'pulse 2.5s ease-in-out infinite' }} />
-            Backend Online
+            <span className="status-dot" style={{
+              background: backendOnline === false ? 'var(--red)' : 'var(--green)',
+              animation: 'pulse 2.5s ease-in-out infinite',
+            }} />
+            {backendOnline === false ? 'Backend Offline' : 'Backend Online'}
           </div>
           <a href="index.html" className="nav-back">← Site</a>
         </div>
@@ -764,7 +827,7 @@
   /* ══════════════════════════════════════════
      MESSAGES
   ══════════════════════════════════════════ */
-  function Msg({ role, content, question, onExport }) {
+  function Msg({ role, content, question, modelUsed, onExport }) {
     if (role === 'loading') return (
       <div className="fade-up">
         <div className="msg-meta">Forge AI · Analysing</div>
@@ -777,6 +840,12 @@
       </div>
     );
 
+    if (role === 'separator') return (
+      <div style={{ textAlign: 'center', padding: '4px 0 8px' }}>
+        <span className="mono" style={{ fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.06em' }}>{content}</span>
+      </div>
+    );
+
     if (role === 'ai') {
       return (
         <div className="msg-ai fade-up">
@@ -784,6 +853,9 @@
           <div className="msg-ai-card">
             <div className="msg-body">{renderMarkdown(content)}</div>
           </div>
+          {modelUsed && (
+            <div className="msg-model-tag">via {modelUsed}</div>
+          )}
           {question && onExport && (
             <div className="msg-actions">
               <button className="btn-export" onClick={() => onExport(question, content)}>
@@ -860,11 +932,14 @@
                 className="scr"
               />
             </div>
-            <button className="send-btn" onClick={send} disabled={!input.trim() || isQuerying} aria-label="Send query">
+            <button className="send-btn" onClick={send} disabled={!input.trim() || isQuerying || input.length > 1000} aria-label="Send query">
               <Ico d={I.send} size={14} />
             </button>
           </div>
-          <p className="input-hint">Enter to send · Shift+Enter for new line</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+            <p className="input-hint" style={{ margin: 0 }}>Enter to send · Shift+Enter for new line</p>
+            <span className="input-hint" style={{ color: input.length > 900 ? 'var(--red)' : undefined }}>{input.length} / 1000</span>
+          </div>
         </div>
       </div>
     );
@@ -912,17 +987,40 @@
      APP ROOT
   ══════════════════════════════════════════ */
   function App() {
-    const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [file,        setFile]        = useState(null);
-    const [fileUrl,     setFileUrl]     = useState(null);
-    const [fileType,    setFileType]    = useState(null);
-    const [fileContext, setFileContext] = useState('');
-    const [aiQuestions, setAiQuestions] = useState([]);
-    const [isUploading, setIsUploading] = useState(false);
-    const [uploadError, setUploadError] = useState(null);
-    const [messages,    setMessages]    = useState([]);
-    const [isQuerying,  setIsQuerying]  = useState(false);
-    const [modalOpen,   setModalOpen]   = useState(false);
+    const [sidebarOpen,   setSidebarOpen]   = useState(true);
+    const [file,          setFile]          = useState(null);
+    const [fileUrl,       setFileUrl]       = useState(null);
+    const [fileType,      setFileType]      = useState(null);
+    const [fileContext,   setFileContext]   = useState('');
+    const [aiQuestions,   setAiQuestions]   = useState([]);
+    const [isUploading,   setIsUploading]   = useState(false);
+    const [uploadError,   setUploadError]   = useState(null);
+    const [messages,      setMessages]      = useState([]);
+    const [isQuerying,    setIsQuerying]    = useState(false);
+    const [modalOpen,     setModalOpen]     = useState(false);
+    const [selectedModel, setSelectedModel] = useState('auto');
+    const [isDark, setIsDark] = useState(() => localStorage.getItem('forge-theme') !== 'light');
+    const [backendOnline, setBackendOnline] = useState(null);
+
+    useEffect(() => {
+      if (isDark) {
+        document.documentElement.classList.remove('light');
+        localStorage.setItem('forge-theme', 'dark');
+      } else {
+        document.documentElement.classList.add('light');
+        localStorage.setItem('forge-theme', 'light');
+      }
+    }, [isDark]);
+
+    useEffect(() => {
+      const check = async () => {
+        try { await axios.get(`${API}/health`); setBackendOnline(true); }
+        catch { setBackendOnline(false); }
+      };
+      check();
+      const id = setInterval(check, 30000);
+      return () => clearInterval(id);
+    }, []);
     const [history,     setHistory]     = useState(() => {
       try { return JSON.parse(localStorage.getItem('forge-history') || '[]'); } catch { return []; }
     });
@@ -957,8 +1055,8 @@
       setFileContext(''); setAiQuestions([]); setUploadError(null);
     }, [fileUrl]);
 
-    const saveToHistory = useCallback((question, response) => {
-      const item = { id: Date.now(), question, response, ts: new Date().toISOString() };
+    const saveToHistory = useCallback((question, response, modelUsed) => {
+      const item = { id: Date.now(), question, response, modelUsed, ts: new Date().toISOString() };
       setHistory(prev => {
         const updated = [item, ...prev].slice(0, 20);
         try { localStorage.setItem('forge-history', JSON.stringify(updated)); } catch {}
@@ -973,10 +1071,10 @@
     }, []);
 
     const handleLoadHistory = useCallback((item) => {
-      setMessages(prev => [
-        ...prev,
-        { role: 'user', content: item.question, id: Date.now()     },
-        { role: 'ai',   content: item.response,  question: item.question, id: Date.now() + 1 },
+      setMessages([
+        { role: 'separator', content: '— Loaded from history —', id: Date.now() - 1 },
+        { role: 'user', content: item.question, id: Date.now() },
+        { role: 'ai',   content: item.response,  question: item.question, modelUsed: item.modelUsed ?? null, id: Date.now() + 1 },
       ]);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     }, []);
@@ -986,9 +1084,14 @@
       setMessages(prev => [...prev, { role: 'user', content: query, id: Date.now() }]);
       setIsQuerying(true);
       try {
-        const { data } = await axios.post(`${API}/query`, { query, file_context: fileContext });
-        setMessages(prev => [...prev, { role: 'ai', content: data.response, question: query, id: Date.now() + 1 }]);
-        saveToHistory(query, data.response);
+        const payload = { query, file_context: fileContext, file_type: fileType ?? '' };
+        if (selectedModel !== 'auto') payload.model = selectedModel;
+        const { data } = await axios.post(`${API}/query`, payload);
+        setMessages(prev => [...prev, {
+          role: 'ai', content: data.response, question: query,
+          modelUsed: data.model_used ?? null, id: Date.now() + 1,
+        }]);
+        saveToHistory(query, data.response, data.model_used ?? null);
       } catch (err) {
         setMessages(prev => [...prev, {
           role: 'error',
@@ -996,7 +1099,7 @@
           id: Date.now() + 1,
         }]);
       } finally { setIsQuerying(false); }
-    }, [fileContext, isQuerying, saveToHistory]);
+    }, [fileContext, fileType, selectedModel, isQuerying, saveToHistory]);
 
     /* ── Empty state content ── */
     const renderEmpty = () => {
@@ -1035,7 +1138,7 @@
 
     return (
       <>
-        <Nav sidebarOpen={sidebarOpen} onToggle={() => setSidebarOpen(s => !s)} queryCount={queryCount} />
+        <Nav sidebarOpen={sidebarOpen} onToggle={() => setSidebarOpen(s => !s)} queryCount={queryCount} selectedModel={selectedModel} onModelChange={setSelectedModel} isDark={isDark} onThemeToggle={() => setIsDark(d => !d)} backendOnline={backendOnline} />
 
         <div className="workspace">
           <Sidebar
@@ -1057,7 +1160,7 @@
                 ? renderEmpty()
                 : (
                   <div className="messages-inner">
-                    {messages.map(m => <Msg key={m.id} role={m.role} content={m.content} question={m.question} onExport={handleExport} />)}
+                    {messages.map(m => <Msg key={m.id} role={m.role} content={m.content} question={m.question} modelUsed={m.modelUsed} onExport={handleExport} />)}
                     {isQuerying && <Msg key="loading" role="loading" />}
                     <div ref={bottomRef} style={{ height: 1 }} />
                   </div>

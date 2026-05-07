@@ -18,10 +18,10 @@ Be the AI layer between an engineer's mind and their final design.
 ## What's Left
 
 - **Phase 3: React frontend** — split screen UI, drag and drop upload, chat interface
-- **Phase 4: Guided onboarding** — auto questions on file upload, context assembly
-- **Phase 5: Output layer** — structured reports, file annotations, CAD parameter export
-- **Phase 6: Multi-model routing** — LiteLLM, Claude + GPT + Gemini switching
-- **Phase 7: Polish and user testing**
+- ✅ **Phase 4: Guided onboarding** — auto questions on file upload, context assembly
+- ✅ **Phase 5: Output layer** — structured reports, file annotations, CAD parameter export
+- ✅ **Phase 6: Multi-model routing** — LiteLLM, Claude + GPT + Gemini switching
+- **Phase 7: Polish and user testing** *(In Progress)*
 - **Phase 8: Monetization**
 
 ---

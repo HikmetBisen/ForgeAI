@@ -31,6 +31,24 @@
       --t:         0.22s cubic-bezier(0.25,0.46,0.45,0.94);
     }
 
+    [data-theme="light"] {
+      --ink:      #f0f4fa;
+      --surface:  #f7f9fc;
+      --panel:    #ffffff;
+      --lift:     #edf1f7;
+      --wire:     #c5d0e0;
+      --wire-lt:  #a8b8cc;
+      --blue:     #2E75B6;
+      --blue-lt:  #1a5fa0;
+      --blue-dim: rgba(46,117,182,0.08);
+      --text:     #0a0d14;
+      --text-2:   #3d5068;
+      --text-3:   #7a8ea6;
+    }
+    [data-theme="light"] .nav.scrolled {
+      background: rgba(240,244,250,0.92);
+    }
+
     /* ── GLOBAL RESET ──────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
@@ -1009,7 +1027,8 @@
 </head>
 <body>
 <script>(function(){
-  document.documentElement.setAttribute('data-theme','dark');
+  var t=localStorage.getItem('forge-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  document.documentElement.setAttribute('data-theme',t);
   document.documentElement.classList.add('animations-ready');
 })();</script>
 
@@ -1027,6 +1046,7 @@
       <li><a href="about.html">About</a></li>
     </ul>
     <div class="nav-actions">
+      <button class="btn-icon-nav" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme"></button>
       <a href="app.html" class="btn-launch">Launch App</a>
     </div>
   </div>
@@ -1460,6 +1480,21 @@
 <div id="page-sweeper"></div>
 
 <script>
+  // ── Theme toggle ──────────────────────────────────────────────
+  const SUN  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+  const MOON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+  function updateThemeIcon() {
+    const b = document.getElementById('themeBtn');
+    if (b) b.innerHTML = document.documentElement.getAttribute('data-theme') === 'dark' ? MOON : SUN;
+  }
+  function toggleTheme() {
+    const n = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', n);
+    localStorage.setItem('forge-theme', n);
+    updateThemeIcon();
+  }
+  updateThemeIcon();
+
   // ── Navbar scroll ──────────────────────────────────────────────
   const nav = document.getElementById('nav');
   window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 8), { passive: true });

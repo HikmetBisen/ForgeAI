@@ -7,6 +7,7 @@ import re
 import anthropic
 import fitz
 import httpx
+import litellm
 import uvicorn
 import voyageai
 from dotenv import load_dotenv
@@ -24,6 +25,7 @@ SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_ANON_KEY = os.environ["SUPABASE_ANON_KEY"]
 VOYAGE_API_KEY = os.environ["VOYAGE_API_KEY"]
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 SUPABASE_HEADERS = {
     "apikey": SUPABASE_ANON_KEY,
@@ -65,6 +67,24 @@ FALLBACK_QUESTIONS = [
 MAX_FILE_BYTES = 10 * 1024 * 1024  # 10 MB
 ALLOWED_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
 
+MODEL_CLAUDE = "anthropic/claude-sonnet-4-5"
+MODEL_GPT4O  = "openai/gpt-4o"
+
+AVAILABLE_MODELS = [
+    {"id": "claude-sonnet-4-5", "name": "Claude Sonnet 4.5", "provider": "Anthropic"},
+    {"id": "gpt-4o",            "name": "GPT-4o",             "provider": "OpenAI"},
+]
+
+_OVERRIDE_MAP = {"claude-sonnet-4-5": MODEL_CLAUDE, "gpt-4o": MODEL_GPT4O}
+
+MATH_PATTERN = re.compile(
+    r"\b(calculat|comput|stress|strain|force|moment|torque|pressure|deflect|frequenc|"
+    r"eigenvalue|integral|differential|equation|safety factor|factor of safety|FEA|"
+    r"finite element|newton|pascal|yield|modulus|inertia|shear|buckling|fatigue|"
+    r"thermal|heat transfer|vibration|resonan|bearing|tensile|compress|bending)\w*\b",
+    re.IGNORECASE,
+)
+
 logging.basicConfig(level=logging.ERROR, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -103,6 +123,8 @@ async def limit_request_body(request: Request, call_next):
 class QueryRequest(BaseModel):
     query: str
     file_context: str = ""
+    file_type: str = ""
+    model: str | None = None
 
     @field_validator("query")
     @classmethod
@@ -113,18 +135,55 @@ class QueryRequest(BaseModel):
             raise ValueError("Query must be 1000 characters or fewer.")
         return v
 
+    @field_validator("model")
+    @classmethod
+    def validate_model(cls, v: str | None) -> str | None:
+        allowed = {m["id"] for m in AVAILABLE_MODELS}
+        if v is not None and v not in allowed:
+            raise ValueError(f"Unknown model '{v}'. Allowed: {', '.join(sorted(allowed))}")
+        return v
+
 
 # --- helpers ---
 
-def _rag_search(query: str, match_count: int = 5) -> list[dict]:
-    voyage = voyageai.Client(api_key=VOYAGE_API_KEY)
-    result = voyage.embed([query], model="voyage-large-2", input_type="query")
-    query_embedding = result.embeddings[0]
+def _check_ext(filename: str | None) -> str:
+    ext = os.path.splitext((filename or "").lower())[1]
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type '{ext}'. Allowed: PDF, PNG, JPG, JPEG.",
+        )
+    return ext
 
+
+def _check_size(data: bytes) -> None:
+    if len(data) > MAX_FILE_BYTES:
+        raise HTTPException(status_code=400, detail="File exceeds 10 MB limit.")
+
+
+def _pdf_to_text(data: bytes) -> str:
+    doc = fitz.open(stream=data, filetype="pdf")
+    return "\n".join(page.get_text() for page in doc)
+
+
+def _select_model(query: str, file_type: str, override: str | None) -> str:
+    if override in _OVERRIDE_MAP:
+        return _OVERRIDE_MAP[override]
+    if file_type == "image":
+        return MODEL_CLAUDE
+    if OPENAI_API_KEY and MATH_PATTERN.search(query):
+        return MODEL_GPT4O
+    return MODEL_CLAUDE
+
+
+def _rag_search(query: str, match_count: int = 5) -> list[dict]:
+    embedding = voyageai.Client(api_key=VOYAGE_API_KEY).embed(
+        [query], model="voyage-large-2", input_type="query"
+    ).embeddings[0]
     response = httpx.post(
         f"{SUPABASE_URL}/rest/v1/rpc/match_documents",
         headers=SUPABASE_HEADERS,
-        json={"query_embedding": query_embedding, "match_count": match_count},
+        json={"query_embedding": embedding, "match_count": match_count},
         timeout=30,
     )
     response.raise_for_status()
@@ -160,27 +219,13 @@ def health():
 @limiter.limit("10/minute")
 async def upload(request: Request, file: UploadFile):
     try:
-        filename = file.filename or ""
-        ext = os.path.splitext(filename.lower())[1]
-
-        if ext not in ALLOWED_EXTENSIONS:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid file type '{ext}'. Allowed: PDF, PNG, JPG, JPEG.",
-            )
-
+        ext = _check_ext(file.filename)
         data = await file.read()
-
-        if len(data) > MAX_FILE_BYTES:
-            raise HTTPException(status_code=400, detail="File exceeds 10 MB limit.")
+        _check_size(data)
 
         if ext == ".pdf":
-            doc = fitz.open(stream=data, filetype="pdf")
-            text = "\n".join(page.get_text() for page in doc)
-            return {"file_type": "pdf", "content": text}
-
-        encoded = base64.b64encode(data).decode("utf-8")
-        return {"file_type": "image", "content": encoded}
+            return {"file_type": "pdf", "content": _pdf_to_text(data)}
+        return {"file_type": "image", "content": base64.b64encode(data).decode()}
 
     except HTTPException:
         raise
@@ -193,109 +238,73 @@ async def upload(request: Request, file: UploadFile):
 @limiter.limit("5/minute")
 async def analyze_file(request: Request, file: UploadFile):
     """Upload a file, extract its content, and return 3 AI-generated onboarding questions."""
-    filename = file.filename or ""
-    ext = os.path.splitext(filename.lower())[1]
-
-    if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid file type '{ext}'. Allowed: PDF, PNG, JPG, JPEG.",
-        )
-
     try:
+        ext = _check_ext(file.filename)
         data = await file.read()
-    except Exception as e:
-        logger.error("File read error: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail="Could not read uploaded file.")
+        _check_size(data)
 
-    if len(data) > MAX_FILE_BYTES:
-        raise HTTPException(status_code=400, detail="File exceeds 10 MB limit.")
-
-    # ── Extract content from file ──
-    try:
         if ext == ".pdf":
-            doc = fitz.open(stream=data, filetype="pdf")
-            text = "\n".join(page.get_text() for page in doc)
-            file_type = "pdf"
-            stored_content = text
+            text = _pdf_to_text(data)
+            file_type, stored_content = "pdf", text
             # Truncate to 8 000 chars so the onboarding prompt stays cheap
             claude_content = f"Engineering document text:\n\n{text[:8000]}"
         else:
-            encoded = base64.b64encode(data).decode("utf-8")
+            encoded = base64.b64encode(data).decode()
             mime = "image/png" if ext == ".png" else "image/jpeg"
-            file_type = "image"
-            stored_content = encoded
+            file_type, stored_content = "image", encoded
             claude_content = [
-                {
-                    "type": "image",
-                    "source": {"type": "base64", "media_type": mime, "data": encoded},
-                },
-                {
-                    "type": "text",
-                    "text": "Analyze this engineering file and generate 3 specific questions.",
-                },
+                {"type": "image", "source": {"type": "base64", "media_type": mime, "data": encoded}},
+                {"type": "text", "text": "Analyze this engineering file and generate 3 specific questions."},
             ]
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("File extraction error: %s", e, exc_info=True)
         raise HTTPException(status_code=400, detail="Could not parse the uploaded file.")
 
-    # ── Ask Claude for context-specific questions ──
     questions = FALLBACK_QUESTIONS[:]
     try:
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        message = client.messages.create(
+        message = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY).messages.create(
             model="claude-sonnet-4-5",
             max_tokens=512,
             system=ONBOARDING_PROMPT,
             messages=[{"role": "user", "content": claude_content}],
         )
-        raw = message.content[0].text.strip()
-        parsed = json.loads(raw)
+        parsed = json.loads(message.content[0].text.strip())
         if isinstance(parsed, list) and parsed:
             questions = [str(q) for q in parsed[:3]]
-            # Pad to 3 if Claude returned fewer
-            while len(questions) < 3:
-                questions.append("What additional context would help the analysis?")
+            questions += ["What additional context would help the analysis?"] * (3 - len(questions))
     except (json.JSONDecodeError, ValueError) as e:
         logger.warning("Onboarding JSON parse failed (%s) — using fallback questions", e)
     except Exception as e:
         logger.error("Claude onboarding error: %s", e, exc_info=True)
-        # Non-fatal: return fallback questions so the user can still work
 
-    return {
-        "questions": questions,
-        "file_type": file_type,
-        "content": stored_content,
-    }
+    return {"questions": questions, "file_type": file_type, "content": stored_content}
+
+
+@app.get("/models")
+def get_models():
+    return {"models": AVAILABLE_MODELS}
 
 
 @app.post("/query")
 @limiter.limit("10/minute")
 def query(request: Request, req: QueryRequest):
+    model_id = _select_model(req.query, req.file_type, req.model)
     try:
         rag_rows = _rag_search(req.query)
-    except httpx.HTTPStatusError as e:
-        logger.error("RAG search failed: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail="Something went wrong.")
-    except Exception as e:
-        logger.error("RAG search error: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail="Something went wrong.")
-
-    try:
         prompt = _build_prompt(req.query, rag_rows, req.file_context)
-
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        message = client.messages.create(
-            model="claude-sonnet-4-5",
+        result = litellm.completion(
+            model=model_id,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": prompt},
+            ],
             max_tokens=2048,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": prompt}],
         )
-
-        return {"response": message.content[0].text}
-
+        return {"response": result.choices[0].message.content, "model_used": model_id.split("/")[-1]}
     except Exception as e:
-        logger.error("Claude API error: %s", e, exc_info=True)
+        logger.error("Query error (%s): %s", model_id, e, exc_info=True)
         raise HTTPException(status_code=500, detail="Something went wrong.")
 
 
